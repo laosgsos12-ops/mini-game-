@@ -1,0 +1,4034 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Mini World Relax" />
+  <meta name="description" content="Mini World Relax - เกมผจญภัย 2D แนวผ่อนคลายไร้ที่สิ้นสุด เล่นได้ทั้งโหมดเอาชีวิตรอดและโหมดอมตะ" />
+  <title>Mini World Relax — 2D Endless Relaxing Adventure</title>
+  <link id="pwa-manifest" rel="manifest" href="" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* =========================================================================
+       CORE STYLES & MODERN GLASSMORPHISM UI
+       ========================================================================= */
+    :root {
+      --glass-bg: rgba(15, 23, 42, 0.68);
+      --glass-card: rgba(30, 41, 59, 0.62);
+      --glass-border: rgba(255, 255, 255, 0.14);
+      --accent-mint: #34d399;
+      --accent-sky: #38bdf8;
+      --accent-amber: #fbbf24;
+      --accent-rose: #fb7185;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b1120;
+      font-family: 'Prompt', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #f8fafc;
+      touch-action: none;
+    }
+
+    canvas#gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* Glass Panels & Smooth Animations */
+    .glass-panel {
+      background: var(--glass-bg);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-card {
+      background: var(--glass-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.22s ease, background 0.22s ease;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(51, 65, 85, 0.72);
+    }
+
+    .btn-game {
+      transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, filter 0.2s ease;
+    }
+
+    .btn-game:active {
+      transform: scale(0.95);
+    }
+
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(14px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .animate-float {
+      animation: floatSlow 4s ease-in-out infinite;
+    }
+
+    .animate-modal {
+      animation: fadeSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Custom Scrollbar for Modals */
+    .custom-scroll {
+      overflow-y: auto;
+      touch-action: pan-y;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.3);
+      border-radius: 999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.35);
+      border-radius: 999px;
+    }
+
+    /* Range Slider Styling */
+    input[type="range"].relax-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"].relax-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #34d399;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(52, 211, 153, 0.6);
+      border: 2px solid #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =======================================================================
+       1. MAIN 2D GAME CANVAS
+       ======================================================================= -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- =======================================================================
+       2. TOAST NOTIFICATION SYSTEM (NO browser alert() used anywhere)
+       ======================================================================= -->
+  <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none w-full max-w-md px-4"></div>
+
+  <!-- =======================================================================
+       3. IN-GAME HUD (Visible during active gameplay)
+       ======================================================================= -->
+  <div id="gameHud" class="hidden fixed inset-0 z-20 pointer-events-none flex flex-col justify-between p-3 sm:p-5">
+    <!-- Top HUD Bar -->
+    <div class="flex items-start justify-between gap-2 w-full">
+      <!-- Left: Health / Mode Status & Coins -->
+      <div class="flex flex-wrap items-center gap-2 pointer-events-auto">
+        <!-- Health / Immortal Badge -->
+        <div id="hudHealthBox" class="glass-panel px-3.5 py-2 rounded-2xl flex items-center gap-2">
+          <!-- Populated dynamically with Custom Heart SVGs or Infinity SVG -->
+        </div>
+
+        <!-- Coins Pill -->
+        <div class="glass-panel px-3.5 py-2 rounded-2xl flex items-center gap-2">
+          <svg class="w-5 h-5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" fill="url(#coinGradHud)" stroke="#fef08a" stroke-width="1.5"/>
+            <path d="M12 7.5V16.5M9.5 10C9.5 8.89543 10.6193 8 12 8C13.3807 8 14.5 8.89543 14.5 10C14.5 11.1046 13.3807 12 12 12C10.6193 12 9.5 12.8954 9.5 14C9.5 15.1046 10.6193 16 12 16C13.3807 16 14.5 15.1046 14.5 14" stroke="#78350f" stroke-width="1.8" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="coinGradHud" x1="3" y1="3" x2="21" y2="21">
+                <stop stop-color="#fde047"/>
+                <stop offset="1" stop-color="#f59e0b"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <span id="hudCoins" class="font-semibold text-sm sm:text-base text-amber-200 tabular-nums">0</span>
+        </div>
+
+        <!-- Immortal Mode Obstacle Toggle (Only visible in Immortal Mode) -->
+        <button id="btnToggleObstacles" onclick="GameApp.toggleImmortalObstacles()" class="hidden btn-game glass-panel px-3.5 py-2 rounded-2xl flex items-center gap-2 text-xs sm:text-sm font-medium text-sky-200 hover:border-sky-400/50">
+          <svg class="w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <span id="hudObstacleLabel">อุปสรรค: เปิด</span>
+        </button>
+      </div>
+
+      <!-- Center: Biome & Stage / Distance -->
+      <div class="hidden md:flex glass-panel px-4 py-2 rounded-2xl items-center gap-3 pointer-events-auto">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="hudBiomeName" class="text-xs font-medium text-emerald-200">ป่าแห่งสายลม</span>
+        </div>
+        <span class="text-white/20">|</span>
+        <span id="hudStageText" class="text-xs font-semibold text-white">ด่าน 1</span>
+        <span class="text-white/20">|</span>
+        <span id="hudDistanceText" class="text-xs font-medium text-slate-300 tabular-nums">0 ม.</span>
+      </div>
+
+      <!-- Right: Score & Quick Actions -->
+      <div class="flex items-center gap-2 pointer-events-auto">
+        <div class="glass-panel px-3.5 py-2 rounded-2xl flex flex-col items-end">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 leading-none">คะแนน</span>
+          <span id="hudScore" class="font-bold text-sm sm:text-base text-white tabular-nums leading-tight">0</span>
+        </div>
+
+        <!-- Quick Save Checkpoint Button -->
+        <button onclick="GameApp.manualSaveCurrent()" title="บันทึกความคืบหน้า" class="btn-game glass-panel p-2.5 rounded-2xl text-emerald-300 hover:text-emerald-200">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+        </button>
+
+        <!-- Mute Toggle Button -->
+        <button onclick="GameApp.toggleMute()" title="เปิด/ปิดเสียง" class="btn-game glass-panel p-2.5 rounded-2xl text-slate-200 hover:text-white">
+          <svg id="hudMuteIcon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+        </button>
+
+        <!-- Pause Button -->
+        <button onclick="GameApp.pauseGame()" title="หยุดชั่วคราว" class="btn-game glass-panel p-2.5 rounded-2xl text-slate-200 hover:text-white">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <rect x="6" y="4" width="4" height="16" rx="1.5"/>
+            <rect x="14" y="4" width="4" height="16" rx="1.5"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Biome & Distance Sub-bar -->
+    <div class="flex md:hidden justify-center mt-1">
+      <div class="glass-panel px-3 py-1 rounded-full flex items-center gap-2 text-[11px]">
+        <span id="hudBiomeNameMobile" class="text-emerald-300 font-medium">ป่าแห่งสายลม</span>
+        <span class="text-white/25">•</span>
+        <span id="hudStageTextMobile" class="text-white font-semibold">ด่าน 1</span>
+        <span class="text-white/25">•</span>
+        <span id="hudDistanceTextMobile" class="text-slate-300 tabular-nums">0 ม.</span>
+      </div>
+    </div>
+
+    <!-- Bottom Touch Controls Layer (Virtual Joystick + Ability + Jump) -->
+    <div id="touchControlsLayer" class="mt-auto flex items-end justify-between w-full pb-2 sm:pb-4 px-1 sm:px-4">
+      <!-- Custom SVG Virtual Joystick -->
+      <div id="joystickZone" class="pointer-events-auto relative w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center">
+        <svg id="joystickBaseSvg" class="w-full h-full opacity-80" viewBox="0 0 140 140" fill="none">
+          <circle cx="70" cy="70" r="62" fill="rgba(15, 23, 42, 0.45)" stroke="rgba(255, 255, 255, 0.22)" stroke-width="2"/>
+          <circle cx="70" cy="70" r="42" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <!-- Directional chevrons -->
+          <path d="M24 70L32 63V77L24 70Z" fill="rgba(255,255,255,0.35)"/>
+          <path d="M116 70L108 63V77L116 70Z" fill="rgba(255,255,255,0.35)"/>
+          <path d="M70 116L63 108H77L70 116Z" fill="rgba(255,255,255,0.35)"/>
+        </svg>
+        <div id="joystickThumb" class="absolute w-14 h-14 rounded-full bg-gradient-to-br from-emerald-300/90 to-teal-500/90 border-2 border-white/80 shadow-lg shadow-emerald-500/30 flex items-center justify-center pointer-events-none transition-transform duration-75">
+          <div class="w-4 h-4 rounded-full bg-white/60"></div>
+        </div>
+      </div>
+
+      <!-- Right Action Buttons: Special Ability + Jump -->
+      <div class="pointer-events-auto flex items-end gap-3 sm:gap-4">
+        <!-- Special Ability Button -->
+        <button id="btnTouchAbility" class="btn-game relative w-16 h-16 sm:w-18 sm:h-18 rounded-full glass-panel border-2 border-sky-300/50 flex flex-col items-center justify-center shadow-lg shadow-sky-500/20">
+          <svg class="w-7 h-7 text-sky-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+          </svg>
+          <span id="abilityCooldownText" class="text-[10px] font-semibold text-sky-200 mt-0.5">พลัง</span>
+        </button>
+
+        <!-- Primary Jump Button -->
+        <button id="btnTouchJump" class="btn-game w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-emerald-400/90 to-teal-600/90 border-2 border-white/70 flex flex-col items-center justify-center shadow-xl shadow-emerald-500/30">
+          <svg class="w-9 h-9 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19V5"/>
+            <polyline points="5 12 12 5 19 12"/>
+          </svg>
+          <span class="text-[11px] font-bold text-white tracking-wide">กระโดด</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================================
+       4. MAIN MENU OVERLAY (Home Screen)
+       ======================================================================= -->
+  <div id="mainMenuOverlay" class="fixed inset-0 z-30 flex items-center justify-center p-3 sm:p-6 overflow-y-auto custom-scroll">
+    <div class="w-full max-w-5xl my-auto flex flex-col gap-4 sm:gap-5 animate-modal">
+
+      <!-- Top Status Header: Coins, Save Status & PWA Install -->
+      <div class="flex flex-wrap items-center justify-between gap-2 glass-panel px-4 py-3 rounded-3xl">
+        <div class="flex items-center gap-3">
+          <!-- Total Coins -->
+          <div class="flex items-center gap-2 bg-slate-900/60 px-3.5 py-1.5 rounded-2xl border border-amber-400/25">
+            <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" fill="#fbbf24" stroke="#fef08a" stroke-width="1.5"/>
+              <circle cx="12" cy="12" r="5" stroke="#92400e" stroke-width="1.5"/>
+            </svg>
+            <span id="menuTotalCoins" class="font-bold text-amber-300 tabular-nums">0</span>
+          </div>
+
+          <!-- Save Sync Indicator -->
+          <div id="saveStatusBadge" class="flex items-center gap-1.5 text-xs text-emerald-300 bg-emerald-950/50 px-3 py-1.5 rounded-2xl border border-emerald-500/25">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="saveStatusText">พร้อมบันทึกอัตโนมัติ</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Install PWA Button -->
+          <button id="btnInstallPwaHeader" onclick="UIController.openModal('pwaModal')" class="btn-game flex items-center gap-2 bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/30 px-3.5 py-1.5 rounded-2xl text-xs sm:text-sm font-medium">
+            <svg class="w-4 h-4 text-sky-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>ติดตั้งเกม / PWA</span>
+          </button>
+
+          <!-- Sound Toggle -->
+          <button onclick="GameApp.toggleMute()" class="btn-game glass-card p-2 rounded-2xl text-slate-200" title="เปิด/ปิดเสียง">
+            <svg id="menuMuteIcon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hero Banner & Continue Card -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Game Brand & Quick Play -->
+        <div class="lg:col-span-7 glass-panel p-6 sm:p-8 rounded-3xl flex flex-col justify-between relative overflow-hidden">
+          <!-- Decorative Custom Vector Sun/Hills -->
+          <svg class="absolute -right-8 -bottom-8 w-64 h-64 opacity-20 pointer-events-none" viewBox="0 0 200 200" fill="none">
+            <circle cx="130" cy="60" r="36" fill="#fde047"/>
+            <path d="M0 150C40 110 80 120 120 140C160 160 180 130 200 120V200H0V150Z" fill="#34d399"/>
+            <path d="M0 175C50 155 110 165 200 145V200H0V175Z" fill="#0d9488"/>
+          </svg>
+
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-400/15 border border-emerald-400/30 text-emerald-300 text-xs font-medium mb-3">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 3v18M3 12h18"/>
+              </svg>
+              <span>2D ENDLESS RELAXING EDITION</span>
+            </div>
+            <h1 class="text-3xl sm:text-5xl font-bold tracking-tight text-white mb-2">
+              Mini World <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-sky-300">Relax</span>
+            </h1>
+            <p class="text-slate-300 text-sm sm:text-base max-w-lg leading-relaxed">
+              ออกเดินทางสำรวจโลกกว้างไร้ที่สิ้นสุด ไม่มีเวลาจำกัด ไม่มีพลังงานหมด พักผ่อนไปกับเสียงธรรมชาติและทิวทัศน์ที่เปลี่ยนไปตามการเดินทางของคุณ
+            </p>
+          </div>
+
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <!-- Primary Play Button (Opens Mode Select or Starts Immediately) -->
+            <button onclick="UIController.openModal('modeModal')" class="btn-game flex items-center gap-2.5 bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 font-bold px-6 py-3.5 rounded-2xl shadow-lg shadow-emerald-500/25 text-base">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="6 4 20 12 6 20 6 4"/>
+              </svg>
+              <span>เริ่มเล่นเกม (Play)</span>
+            </button>
+
+            <!-- Continue Saved Progress Button -->
+            <button id="btnContinueMain" onclick="GameApp.continueSavedGame()" class="btn-game flex items-center gap-2.5 glass-card border border-amber-300/40 text-amber-200 font-semibold px-5 py-3.5 rounded-2xl text-sm sm:text-base">
+              <svg class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+              <div class="text-left">
+                <div class="leading-tight">เล่นต่อ (Continue)</div>
+                <div id="continueSubtext" class="text-[11px] font-normal text-slate-300">ด่าน 1 • ป่าแห่งสายลม</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode Quick Cards (Survival & Immortal) -->
+        <div class="lg:col-span-5 flex flex-col gap-3">
+          <!-- Mode 1: Survival -->
+          <button onclick="GameApp.startNewGame('survival')" class="btn-game glass-panel p-4 rounded-3xl text-left flex items-center gap-4 border border-rose-400/20 hover:border-rose-400/50 group">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500/25 to-amber-500/20 border border-rose-400/30 flex items-center justify-center shrink-0">
+              <!-- Custom SVG Heart & Compass -->
+              <svg class="w-9 h-9 text-rose-400 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="rgba(251, 113, 133, 0.25)"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white text-base">Survival Mode</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-200 border border-rose-400/30">เอาชีวิตรอด</span>
+              </div>
+              <p class="text-xs text-slate-300 mt-1 line-clamp-2">ผจญภัยเก็บเหรียญและไอเทมช่วยเหลือ มีระบบพลังชีวิต จุดเซฟ Checkpoint และความท้าทายที่ค่อยๆ เพิ่มขึ้นอย่างนุ่มนวล</p>
+            </div>
+          </button>
+
+          <!-- Mode 2: Immortal -->
+          <button onclick="GameApp.startNewGame('immortal')" class="btn-game glass-panel p-4 rounded-3xl text-left flex items-center gap-4 border border-sky-400/20 hover:border-sky-400/50 group">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500/25 to-emerald-500/20 border border-sky-400/30 flex items-center justify-center shrink-0">
+              <!-- Custom SVG Infinity Leaf -->
+              <svg class="w-9 h-9 text-sky-300 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                <path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white text-base">Immortal Mode</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-200 border border-sky-400/30">โหมดอมตะ</span>
+              </div>
+              <p class="text-xs text-slate-300 mt-1 line-clamp-2">ไม่มี Game Over ไม่เสียพลังชีวิต เดินสำรวจโลกและเก็บเหรียญได้ไม่จำกัด พร้อมปุ่มเปิด/ปิดอุปสรรคได้ตามใจ</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Grid: World, Character, Shop, Quests/Stats, Settings, Developer -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- World Selection -->
+        <button onclick="UIController.openModal('worldModal')" class="btn-game glass-panel p-4 rounded-3xl flex flex-col items-center justify-center gap-2 text-center hover:border-emerald-400/40">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-500/15 flex items-center justify-center text-emerald-300">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>
+            </svg>
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-white">เลือกฉากโลก</span>
+          <span id="menuWorldCount" class="text-[11px] text-slate-400">1/7 โลก</span>
+        </button>
+
+        <!-- Character -->
+        <button onclick="UIController.openModal('characterModal')" class="btn-game glass-panel p-4 rounded-3xl flex flex-col items-center justify-center gap-2 text-center hover:border-teal-400/40">
+          <div class="w-11 h-11 rounded-2xl bg-teal-500/15 flex items-center justify-center text-teal-300">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M5 20c0-3.866 3.134-7 7-7s7 3.134 7 7"/>
+            </svg>
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-white">ตัวละคร</span>
+          <span id="menuCharName" class="text-[11px] text-teal-300">Pip</span>
+        </button>
+
+        <!-- Shop -->
+        <button onclick="UIController.openModal('shopModal')" class="btn-game glass-panel p-4 rounded-3xl flex flex-col items-center justify-center gap-2 text-center hover:border-amber-400/40">
+          <div class="w-11 h-11 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-300">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-white">ร้านค้าสกิน</span>
+          <span class="text-[11px] text-amber-300">ปลดล็อกชุด</span>
+        </button>
+
+        <!-- Quests & Achievements -->
+        <button onclick="UIController.openModal('questModal')" class="btn-game glass-panel p-4 rounded-3xl flex flex-col items-center justify-center gap-2 text-center hover:border-purple-400/40">
+          <div class="w-11 h-11 rounded-2xl bg-purple-500/15 flex items-center justify-center text-purple-300">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+              <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+              <path d="M4 22h16"/>
+              <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+              <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+              <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+            </svg>
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-white">ภารกิจ & สถิติ</span>
+          <span class="text-[11px] text-purple-300">รางวัลพิเศษ</span>
+        </button>
+
+        <!-- Settings & Save -->
+        <button onclick="UIController.openModal('settingsModal')" class="btn-game glass-panel p-4 rounded-3xl flex flex-col items-center justify-center gap-2 text-center hover:border-sky-400/40">
+          <div class="w-11 h-11 rounded-2xl bg-sky-500/15 flex items-center justify-center text-sky-300">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-white">ตั้งค่า & เซฟ</span>
+          <span class="text-[11px] text-slate-400">เสียง / ข้อมูล</span>
+        </button>
+
+        <!-- About Developer -->
+        <button onclick="UIController.openModal('devModal')" class="btn-game glass-panel p-4 rounded-3xl flex flex-col items-center justify-center gap-2 text-center hover:border-indigo-400/40">
+          <div class="w-11 h-11 rounded-2xl bg-indigo-500/15 flex items-center justify-center text-indigo-300">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+          </div>
+          <span class="text-xs sm:text-sm font-semibold text-white">ผู้พัฒนา</span>
+          <span class="text-[11px] text-indigo-300">ติดต่อทีมงาน</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================================
+       5. MODAL OVERLAYS (Mode Select, Worlds, Characters, Shop, Quests, Settings, Dev, PWA, Pause, Game Over)
+       ======================================================================= -->
+  <div id="modalBackdrop" class="hidden fixed inset-0 z-40 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto custom-scroll">
+
+    <!-- MODAL: MODE SELECTION (Detailed Illustrations & Descriptions) -->
+    <div id="modeModal" class="hidden modal-box glass-panel w-full max-w-3xl rounded-3xl p-5 sm:p-7 animate-modal my-auto">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white">เลือกโหมดการเดินทาง</h2>
+          <p class="text-xs sm:text-sm text-slate-300">เลือกสไตล์การเล่นที่เหมาะกับอารมณ์ของคุณในตอนนี้</p>
+        </div>
+        <button onclick="UIController.closeAllModals()" class="btn-game glass-card p-2.5 rounded-2xl text-slate-300 hover:text-white">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Survival Mode Card -->
+        <div class="glass-card rounded-3xl p-5 flex flex-col justify-between border border-rose-400/25">
+          <div>
+            <!-- Custom SVG Illustration: Forest Trail & Hearts -->
+            <div class="w-full h-36 rounded-2xl bg-gradient-to-b from-amber-900/40 via-rose-950/40 to-slate-900/80 border border-white/10 mb-4 overflow-hidden relative flex items-center justify-center">
+              <svg class="w-full h-full" viewBox="0 0 320 140" fill="none">
+                <circle cx="250" cy="36" r="22" fill="#fda4af" fill-opacity="0.35"/>
+                <path d="M0 105Q80 80 160 100T320 90V140H0V105Z" fill="#1e293b"/>
+                <path d="M0 118Q90 105 180 120T320 112V140H0V118Z" fill="#0f172a"/>
+                <!-- Hearts & Coins -->
+                <path d="M95 55a8 8 0 0 1 11 0l2 2 2-2a8 8 0 0 1 11 11l-13 13-13-13a8 8 0 0 1 0-11z" fill="#fb7185"/>
+                <circle cx="165" cy="62" r="10" fill="#fbbf24" stroke="#fef08a" stroke-width="2"/>
+                <circle cx="205" cy="52" r="10" fill="#fbbf24" stroke="#fef08a" stroke-width="2"/>
+                <!-- Checkpoint Flag -->
+                <line x1="250" y1="60" x2="250" y2="105" stroke="#34d399" stroke-width="3" stroke-linecap="round"/>
+                <path d="M250 60L275 68L250 76V60Z" fill="#34d399"/>
+              </svg>
+            </div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-lg font-bold text-white">1. Survival Mode</h3>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-200 font-medium">โหมดเอาชีวิตรอด</span>
+            </div>
+            <ul class="text-xs text-slate-300 space-y-1.5 mb-5">
+              <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>มีพลังชีวิต 5 ดวง และไอเทมฟื้นฟูหัวใจ</li>
+              <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>เก็บเหรียญ แม่เหล็กดูดเหรียญ และเกราะป้องกัน</li>
+              <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>ระบบ Checkpoint เซฟด่านอัตโนมัติระหว่างทาง</li>
+              <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>ความยากเริ่มต้นง่ายมากและมีจุดพักผ่อนเป็นระยะ</li>
+            </ul>
+          </div>
+          <button onclick="GameApp.startNewGame('survival')" class="btn-game w-full py-3 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 text-white font-bold text-sm shadow-lg shadow-rose-500/25">
+            เล่นโหมด Survival
+          </button>
+        </div>
+
+        <!-- Immortal Mode Card -->
+        <div class="glass-card rounded-3xl p-5 flex flex-col justify-between border border-sky-400/25">
+          <div>
+            <!-- Custom SVG Illustration: Floating Sky Islands & Aurora -->
+            <div class="w-full h-36 rounded-2xl bg-gradient-to-b from-sky-900/40 via-teal-950/40 to-slate-900/80 border border-white/10 mb-4 overflow-hidden relative flex items-center justify-center">
+              <svg class="w-full h-full" viewBox="0 0 320 140" fill="none">
+                <path d="M20 40C90 15 180 65 300 30" stroke="#38bdf8" stroke-width="12" stroke-linecap="round" stroke-opacity="0.2"/>
+                <path d="M10 58C100 35 200 75 310 48" stroke="#34d399" stroke-width="8" stroke-linecap="round" stroke-opacity="0.25"/>
+                <!-- Floating Island -->
+                <path d="M100 95H220L195 122H125L100 95Z" fill="#0f766e"/>
+                <rect x="96" y="88" width="128" height="10" rx="5" fill="#34d399"/>
+                <!-- Infinity Symbol -->
+                <path d="M178 52c14 0 14 22 0 22-14 0-19.6-22-35-22-12.6 0-12.6 22 0 22 15.4 0 21-22 35-22z" stroke="#7dd3fc" stroke-width="3.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-lg font-bold text-white">2. Immortal Mode</h3>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-200 font-medium">โหมดอมตะ</span>
+            </div>
+            <ul class="text-xs text-slate-300 space-y-1.5 mb-5">
+              <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>ไม่มี Game Over และไม่มีการเสียพลังชีวิต</li>
+              <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>เดิน กระโดด สำรวจวิว และเก็บเหรียญได้ตลอดเวลา</li>
+              <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-teal-400"></span>สามารถกดเปิดหรือปิดอุปสรรคระหว่างเล่นได้ทันที</li>
+              <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>เน้นความผ่อนคลายสูงสุด ไร้แรงกดดัน</li>
+            </ul>
+          </div>
+          <button onclick="GameApp.startNewGame('immortal')" class="btn-game w-full py-3 rounded-2xl bg-gradient-to-r from-sky-400 to-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-sky-500/25">
+            เล่นโหมด Immortal
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: WORLD SELECTION (7 Biomes) -->
+    <div id="worldModal" class="hidden modal-box glass-panel w-full max-w-4xl rounded-3xl p-5 sm:p-7 animate-modal my-auto">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white">เลือกสภาพแวดล้อมเริ่มต้น</h2>
+          <p class="text-xs sm:text-sm text-slate-300">เดินทางไกลขึ้นหรือใช้เหรียญเพื่อปลดล็อกโลกใหม่ๆ</p>
+        </div>
+        <button onclick="UIController.closeAllModals()" class="btn-game glass-card p-2.5 rounded-2xl text-slate-300 hover:text-white">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="worldGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[65vh] overflow-y-auto custom-scroll pr-1"></div>
+    </div>
+
+    <!-- MODAL: CHARACTER SELECTION -->
+    <div id="characterModal" class="hidden modal-box glass-panel w-full max-w-3xl rounded-3xl p-5 sm:p-7 animate-modal my-auto">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white">เลือกตัวละครคู่ใจ</h2>
+          <p class="text-xs sm:text-sm text-slate-300">ตัวละครแต่ละตัวมีความสามารถพิเศษเฉพาะตัว</p>
+        </div>
+        <button onclick="UIController.closeAllModals()" class="btn-game glass-card p-2.5 rounded-2xl text-slate-300 hover:text-white">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="characterGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[65vh] overflow-y-auto custom-scroll pr-1"></div>
+    </div>
+
+    <!-- MODAL: SHOP -->
+    <div id="shopModal" class="hidden modal-box glass-panel w-full max-w-3xl rounded-3xl p-5 sm:p-7 animate-modal my-auto">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white">ร้านค้าสกินและตัวละคร</h2>
+          <p class="text-xs sm:text-sm text-amber-300 font-medium">เหรียญของคุณ: <span id="shopCoinDisplay">0</span> เหรียญ</p>
+        </div>
+        <button onclick="UIController.closeAllModals()" class="btn-game glass-card p-2.5 rounded-2xl text-slate-300 hover:text-white">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="shopGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[65vh] overflow-y-auto custom-scroll pr-1"></div>
+    </div>
+
+    <!-- MODAL: QUESTS, ACHIEVEMENTS & STATS -->
+    <div id="questModal" class="hidden modal-box glass-panel w-full max-w-3xl rounded-3xl p-5 sm:p-7 animate-modal my-auto">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white">ภารกิจรายวัน ความสำเร็จ และสถิติ</h2>
+          <p class="text-xs sm:text-sm text-slate-300">เล่นตามสบาย ไม่บังคับทำภารกิจเพื่อเล่นต่อ</p>
+        </div>
+        <button onclick="UIController.closeAllModals()" class="btn-game glass-card p-2.5 rounded-2xl text-slate-300 hover:text-white">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="max-h-[68vh] overflow-y-auto custom-scroll pr-1 space-y-5">
+        <!-- Stats Summary -->
+        <div id="statsSummaryGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div>
+
+        <!-- Daily Quests -->
+        <div>
+          <h3 class="text-sm font-bold text-emerald-300 uppercase tracking-wider mb-2.5">ภารกิจรายวัน</h3>
+          <div id="dailyQuestList" class="space-y-2.5"></div>
+        </div>
+
+        <!-- Achievements -->
+        <div>
+          <h3 class="text-sm font-bold text-amber-300 uppercase tracking-wider mb-2.5">ความสำเร็จ (Achievements)</h3>
+          <div id="achievementList" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: SETTINGS & SAVE MANAGEMENT -->
+    <div id="settingsModal" class="hidden modal-box glass-panel w-full max-w-2xl rounded-3xl p-5 sm:p-7 animate-modal my-auto">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white">การตั้งค่าและระบบเซฟข้อมูล</h2>
+          <p class="text-xs sm:text-sm text-slate-300">ปรับแต่งเสียง ประสิทธิภาพ และจัดการไฟล์บันทึกความคืบหน้า</p>
+        </div>
+        <button onclick="UIController.closeAllModals()" class="btn-game glass-card p-2.5 rounded-2xl text-slate-300 hover:text-white">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-5 max-h-[68vh] overflow-y-auto custom-scroll pr-1">
+        <!-- Audio Controls -->
+        <div class="glass-card p-4 rounded-2xl space-y-3.5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white">ระบบเสียงและบรรยากาศ</h3>
+            <button onclick="GameApp.toggleMute()" id="settingsMuteBtn" class="text-xs px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-medium">
+              เปิดเสียงอยู่
+            </button>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-300 mb-1">
+              <span>เพลงประกอบผ่อนคลาย (BGM)</span>
+              <span id="valBgm">70%</span>
+            </div>
+            <input id="sliderBgm" type="range" min="0" max="100" value="70" oninput="GameApp.updateAudioSetting('bgm', this.value)" class="w-full relax-slider"/>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-300 mb-1">
+              <span>เอฟเฟกต์เสียง (SFX)</span>
+              <span id="valSfx">80%</span>
+            </div>
+            <input id="sliderSfx" type="range" min="0" max="100" value="80" oninput="GameApp.updateAudioSetting('sfx', this.value)" class="w-full relax-slider"/>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-300 mb-1">
+              <span>เสียงธรรมชาติและสภาพแวดล้อม</span>
+              <span id="valAmb">65%</span>
+            </div>
+            <input id="sliderAmb" type="range" min="0" max="100" value="65" oninput="GameApp.updateAudioSetting('amb', this.value)" class="w-full relax-slider"/>
+          </div>
+        </div>
+
+        <!-- Performance & Controls -->
+        <div class="glass-card p-4 rounded-2xl space-y-3">
+          <h3 class="text-sm font-bold text-white">กราฟิกและการควบคุม</h3>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-300">โหมดประสิทธิภาพ (เหมาะกับมือถือทุกรุ่น)</span>
+            <select id="selectQuality" onchange="GameApp.updateQuality(this.value)" class="bg-slate-900/80 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white outline-none">
+              <option value="auto">อัตโนมัติ (แนะนำ)</option>
+              <option value="high">สูงสุด (เอฟเฟกต์เต็มรูปแบบ)</option>
+              <option value="low">ประหยัดพลังงาน (ลื่นไหลพิเศษ)</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-300">แสดงปุ่มควบคุมบนหน้าจอ</span>
+            <select id="selectTouchUi" onchange="GameApp.updateTouchUi(this.value)" class="bg-slate-900/80 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white outline-none">
+              <option value="auto">อัตโนมัติ (ตามอุปกรณ์)</option>
+              <option value="always">แสดงตลอดเวลา</option>
+              <option value="hidden">ซ่อน (ใช้คีย์บอร์ด)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Reliable Save & Backup System -->
+        <div class="glass-card p-4 rounded-2xl space-y-3 border border-emerald-400/20">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-emerald-300">ระบบจัดการข้อมูลเซฟ & สำรองข้อมูล</h3>
+            <span id="saveIntegrityBadge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200">ตรวจสอบข้อมูลผ่าน</span>
+          </div>
+          <p class="text-xs text-slate-300">ระบบจะบันทึกอัตโนมัติทุกจุด Checkpoint และมีไฟล์สำรองเวอร์ชันก่อนหน้าเพื่อป้องกันข้อมูลเสียหาย</p>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+            <button onclick="SaveSystem.manualSave(true)" class="btn-game bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 text-emerald-200 py-2.5 px-3 rounded-xl text-xs font-semibold">
+              บันทึกทันที (Manual Save)
+            </button>
+            <button onclick="SaveSystem.restoreBackup()" class="btn-game bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/30 text-sky-200 py-2.5 px-3 rounded-xl text-xs font-semibold">
+              กู้คืนเซฟสำรอง
+            </button>
+            <button onclick="SaveSystem.exportSaveFile()" class="btn-game bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 text-amber-200 py-2.5 px-3 rounded-xl text-xs font-semibold">
+              ส่งออกไฟล์เซฟ (.JSON)
+            </button>
+            <label class="btn-game bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 py-2.5 px-3 rounded-xl text-xs font-semibold text-center cursor-pointer">
+              นำเข้าไฟล์เซฟ
+              <input type="file" accept=".json" onchange="SaveSystem.importSaveFile(event)" class="hidden"/>
+            </label>
+            <button onclick="UIController.openResetConfirm()" class="btn-game col-span-2 sm:col-span-2 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/30 text-rose-300 py-2.5 px-3 rounded-xl text-xs font-semibold">
+              รีเซ็ตข้อมูลทั้งหมด (ต้องยืนยัน)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: RESET CONFIRMATION (Replaces forbidden confirm()) -->
+    <div id="resetConfirmModal" class="hidden modal-box glass-panel w-full max-w-md rounded-3xl p-6 animate-modal my-auto border border-rose-400/40">
+      <div class="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-300 flex items-center justify-center mb-4">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-white mb-2">ยืนยันการรีเซ็ตข้อมูลทั้งหมด?</h3>
+      <p class="text-xs sm:text-sm text-slate-300 mb-5 leading-relaxed">
+        ข้อมูลด่านที่ปลดล็อก เหรียญ สกิน และสถิติทั้งหมดจะถูกล้างกลับเป็นค่าเริ่มต้น การดำเนินการนี้ไม่สามารถย้อนกลับได้
+      </p>
+      <div class="flex items-center gap-3">
+        <button onclick="UIController.openModal('settingsModal')" class="btn-game flex-1 py-2.5 rounded-2xl glass-card text-sm font-semibold text-slate-200">
+          ยกเลิก
+        </button>
+        <button onclick="SaveSystem.confirmResetAll()" class="btn-game flex-1 py-2.5 rounded-2xl bg-rose-500 text-white text-sm font-bold shadow-lg shadow-rose-500/30">
+          ยืนยันรีเซ็ตข้อมูล
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL: ABOUT DEVELOPER -->
+    <div id="devModal" class="hidden modal-box glass-panel w-full max-w-xl rounded-3xl p-5 sm:p-7 animate-modal my-auto">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white">เกี่ยวกับผู้พัฒนา (About Developer)</h2>
+          <p class="text-xs sm:text-sm text-slate-300">ช่องทางติดต่อและติดตามอัปเดตเกม Mini World Relax</p>
+        </div>
+        <button onclick="UIController.closeAllModals()" class="btn-game glass-card p-2.5 rounded-2xl text-slate-300 hover:text-white">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="glass-card p-4 rounded-2xl mb-4 flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-sky-500 flex items-center justify-center text-slate-950 font-bold text-xl shrink-0">
+          AX
+        </div>
+        <div>
+          <h3 class="font-bold text-white text-base">Alex Indie Studio</h3>
+          <p class="text-xs text-slate-300 mt-0.5">ออกแบบและพัฒนาเกมแนวผ่อนคลายสำหรับเล่นได้ทุกที่ทุกเวลา</p>
+        </div>
+      </div>
+
+      <!-- Social & Contact Links with Universal Link Opening + Copy Fallback -->
+      <div class="space-y-2.5">
+        <!-- Facebook -->
+        <div class="glass-card p-3.5 rounded-2xl flex items-center justify-between gap-3">
+          <a href="https://www.facebook.com/share/19kq6z2yVb/" target="_blank" rel="noopener noreferrer" onclick="UIController.handleExternalLink(event, 'https://www.facebook.com/share/19kq6z2yVb/', 'Facebook')" class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13.5 21v-7.5h2.5l.4-3h-2.9V8.6c0-.9.3-1.5 1.5-1.5h1.6V4.4c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.4-4 4.1v2.1H7.7v3h2.5V21h3.3z"/>
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-white">Facebook</div>
+              <div class="text-xs text-slate-400 truncate">facebook.com/share/19kq6z2yVb</div>
+            </div>
+          </a>
+          <button onclick="UIController.copyText('https://www.facebook.com/share/19kq6z2yVb/', 'คัดลอกลิงก์ Facebook แล้ว')" class="btn-game px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs text-slate-200 shrink-0">
+            คัดลอกลิงก์
+          </button>
+        </div>
+
+        <!-- TikTok -->
+        <div class="glass-card p-3.5 rounded-2xl flex items-center justify-between gap-3">
+          <a href="https://www.tiktok.com/@alex_xa158?_r=1&_t=ZS-9BTaFwZhBEi" target="_blank" rel="noopener noreferrer" onclick="UIController.handleExternalLink(event, 'https://www.tiktok.com/@alex_xa158?_r=1&_t=ZS-9BTaFwZhBEi', 'TikTok')" class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-white">TikTok</div>
+              <div class="text-xs text-slate-400 truncate">@alex_xa158</div>
+            </div>
+          </a>
+          <button onclick="UIController.copyText('https://www.tiktok.com/@alex_xa158?_r=1&_t=ZS-9BTaFwZhBEi', 'คัดลอกลิงก์ TikTok แล้ว')" class="btn-game px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs text-slate-200 shrink-0">
+            คัดลอกลิงก์
+          </button>
+        </div>
+
+        <!-- Email -->
+        <div class="glass-card p-3.5 rounded-2xl flex items-center justify-between gap-3">
+          <a href="mailto:alex889100@gmail.com" onclick="UIController.handleExternalLink(event, 'mailto:alex889100@gmail.com', 'Email')" class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="3"/>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-white">Email</div>
+              <div class="text-xs text-slate-400 truncate">alex889100@gmail.com</div>
+            </div>
+          </a>
+          <button onclick="UIController.copyText('alex889100@gmail.com', 'คัดลอกอีเมลแล้ว')" class="btn-game px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs text-slate-200 shrink-0">
+            คัดลอกอีเมล
+          </button>
+        </div>
+
+        <!-- WhatsApp -->
+        <div class="glass-card p-3.5 rounded-2xl flex items-center justify-between gap-3">
+          <a href="https://wa.me/8562091415737" target="_blank" rel="noopener noreferrer" onclick="UIController.handleExternalLink(event, 'https://wa.me/8562091415737', 'WhatsApp')" class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-white">WhatsApp</div>
+              <div class="text-xs text-slate-400 truncate">+856 20 9141 5737</div>
+            </div>
+          </a>
+          <button onclick="UIController.copyText('https://wa.me/8562091415737', 'คัดลอกลิงก์ WhatsApp แล้ว')" class="btn-game px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs text-slate-200 shrink-0">
+            คัดลอกลิงก์
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: PWA INSTALLATION & COMPLETE ZIP EXPORT -->
+    <div id="pwaModal" class="hidden modal-box glass-panel w-full max-w-xl rounded-3xl p-5 sm:p-7 animate-modal my-auto">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold text-white">ติดตั้งเกม PWA และดาวน์โหลดไฟล์โปรเจกต์</h2>
+          <p class="text-xs sm:text-sm text-slate-300">เพิ่มลงหน้าจอหลักเพื่อเล่นแบบเต็มจอและออฟไลน์</p>
+        </div>
+        <button onclick="UIController.closeAllModals()" class="btn-game glass-card p-2.5 rounded-2xl text-slate-300 hover:text-white">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Honest PWA Installation Status -->
+        <div class="glass-card p-4 rounded-2xl space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-sky-300 uppercase tracking-wider">สถานะการติดตั้ง PWA</span>
+            <span id="pwaRealStatusBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-700 text-slate-200">กำลังตรวจสอบเบราว์เซอร์</span>
+          </div>
+          <p id="pwaInstructionText" class="text-xs text-slate-300 leading-relaxed">
+            เบราว์เซอร์ของคุณรองรับการเล่นแบบออฟไลน์ หากต้องการเพิ่มลงหน้าจอหลักบน iOS ให้กดปุ่มแชร์ (Share) แล้วเลือก "เพิ่มไปยังหน้าจอโฮม (Add to Home Screen)" สำหรับ Android กดปุ่มติดตั้งด้านล่างเมื่อเบราว์เซอร์พร้อม
+          </p>
+          <button id="btnTriggerNativeInstall" onclick="PWAManager.triggerInstall()" class="hidden btn-game w-full py-2.5 rounded-xl bg-sky-500 text-slate-950 font-bold text-xs">
+            ติดตั้งแอปลงหน้าจอหลักทันที (Install App)
+          </button>
+        </div>
+
+        <!-- Complete Hostable ZIP Bundle Generator -->
+        <div class="glass-card p-4 rounded-2xl border border-emerald-400/30 space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white">ดาวน์โหลดโปรเจกต์เต็มรูปแบบ (.ZIP)</h3>
+              <p class="text-xs text-slate-300">ครบทุกไฟล์: index.html, manifest.webmanifest, service-worker.js, assets/ และ icons/</p>
+            </div>
+          </div>
+          <button onclick="PWAManager.downloadProjectZip()" class="btn-game w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/20">
+            ดาวน์โหลด MiniWorldRelax-PWA.zip
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: PAUSE MENU -->
+    <div id="pauseModal" class="hidden modal-box glass-panel w-full max-w-md rounded-3xl p-6 animate-modal my-auto text-center">
+      <h2 class="text-2xl font-bold text-white mb-1">พักเบรกชั่วคราว</h2>
+      <p class="text-xs text-slate-300 mb-5">สูดหายใจลึกๆ แล้วค่อยออกเดินทางต่อเมื่อพร้อม</p>
+
+      <div class="space-y-2.5">
+        <button onclick="GameApp.resumeGame()" class="btn-game w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 font-bold text-sm">
+          เล่นต่อ (Resume)
+        </button>
+        <button onclick="GameApp.manualSaveCurrent()" class="btn-game w-full py-3 rounded-2xl glass-card text-emerald-300 font-semibold text-sm border border-emerald-400/30">
+          บันทึกความคืบหน้า (Save Checkpoint)
+        </button>
+        <button onclick="UIController.openModal('settingsModal')" class="btn-game w-full py-3 rounded-2xl glass-card text-slate-200 font-semibold text-sm">
+          ตั้งค่าเสียงและเกม
+        </button>
+        <button onclick="GameApp.returnToMenu()" class="btn-game w-full py-3 rounded-2xl glass-card text-rose-300 font-semibold text-sm">
+          กลับสู่หน้าหลัก
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL: GAME OVER (Survival Mode Only) -->
+    <div id="gameOverModal" class="hidden modal-box glass-panel w-full max-w-md rounded-3xl p-6 animate-modal my-auto text-center">
+      <div class="w-14 h-14 rounded-2xl bg-rose-500/20 text-rose-300 flex items-center justify-center mx-auto mb-3">
+        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          <line x1="4" y1="4" x2="20" y2="20"/>
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-white mb-1">สิ้นสุดการเดินทางรอบนี้</h2>
+      <p class="text-xs text-slate-300 mb-4">เหรียญและความก้าวหน้าทั้งหมดของคุณถูกบันทึกเรียบร้อยแล้ว</p>
+
+      <div class="grid grid-cols-3 gap-2 glass-card p-3.5 rounded-2xl mb-5">
+        <div>
+          <div class="text-[11px] text-slate-400">คะแนนรอบนี้</div>
+          <div id="goScore" class="font-bold text-white text-base tabular-nums">0</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-slate-400">ระยะทาง</div>
+          <div id="goDistance" class="font-bold text-emerald-300 text-base tabular-nums">0 ม.</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-slate-400">เหรียญที่ได้</div>
+          <div id="goCoins" class="font-bold text-amber-300 text-base tabular-nums">0</div>
+        </div>
+      </div>
+
+      <div class="space-y-2.5">
+        <button onclick="GameApp.continueFromLastCheckpoint()" class="btn-game w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 font-bold text-sm">
+          เริ่มต่อจาก Checkpoint ล่าสุด
+        </button>
+        <button onclick="GameApp.startNewGame('immortal')" class="btn-game w-full py-3 rounded-2xl glass-card text-sky-300 font-semibold text-sm border border-sky-400/30">
+          สลับไปโหมดอมตะ (Immortal Mode)
+        </button>
+        <button onclick="GameApp.returnToMenu()" class="btn-game w-full py-3 rounded-2xl glass-card text-slate-200 font-semibold text-sm">
+          กลับสู่หน้าหลัก
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- =======================================================================
+       6. JAVASCRIPT GAME ENGINE, AUDIO SYNTH, SAVE MANAGER, & PWA BUNDLER
+       ======================================================================= -->
+  <script type="module">
+    // Optional Firebase Firestore Cloud Sync (Automatically active if platform config exists)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    window.__CloudBridge = {
+      ready: false,
+      db: null,
+      userId: null,
+      appId: typeof __app_id !== 'undefined' ? __app_id : 'mini-world-relax',
+      async init() {
+        try {
+          if (typeof __firebase_config === 'undefined' || !__firebase_config) return;
+          const config = JSON.parse(__firebase_config);
+          const app = initializeApp(config);
+          const auth = getAuth(app);
+          this.db = getFirestore(app);
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+          if (auth.currentUser) {
+            this.userId = auth.currentUser.uid;
+            this.ready = true;
+          }
+        } catch (err) {
+          console.warn('Cloud bridge running in offline-first mode:', err.message);
+        }
+      },
+      async saveSlot(slotName, payload) {
+        if (!this.ready || !this.db || !this.userId) return false;
+        try {
+          const ref = doc(this.db, 'artifacts', this.appId, 'users', this.userId, 'saves', slotName);
+          await setDoc(ref, { json: JSON.stringify(payload), updatedAt: Date.now() });
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      async loadSlot(slotName) {
+        if (!this.ready || !this.db || !this.userId) return null;
+        try {
+          const ref = doc(this.db, 'artifacts', this.appId, 'users', this.userId, 'saves', slotName);
+          const snap = await getDoc(ref);
+          if (snap.exists() && snap.data()?.json) {
+            return JSON.parse(snap.data().json);
+          }
+        } catch (e) {
+          return null;
+        }
+        return null;
+      }
+    };
+  </script>
+
+  <script>
+    'use strict';
+
+    /* =========================================================================
+       SECTION 1: GAME DATA DEFINITIONS (BIOMES, CHARACTERS, QUESTS, ACHIEVEMENTS)
+       ========================================================================= */
+    const BIOMES = [
+      {
+        id: 'forest',
+        name: 'ป่าแห่งสายลม',
+        enName: 'Whispering Forest',
+        unlockCost: 0,
+        unlockStage: 1,
+        skyTop: '#0f292e',
+        skyMid: '#1b4332',
+        skyBot: '#40916c',
+        hillFar: '#1b4332',
+        hillNear: '#2d6a4f',
+        platTop: '#52b788',
+        platBody: '#2b2d42',
+        accent: '#95d5b2',
+        particleColor: 'rgba(183, 228, 199, 0.55)',
+        ambienceType: 'forest'
+      },
+      {
+        id: 'meadow',
+        name: 'ทุ่งหญ้าแสงตะวัน',
+        enName: 'Sunlit Meadow',
+        unlockCost: 80,
+        unlockStage: 3,
+        skyTop: '#1e3a5f',
+        skyMid: '#3d7a8a',
+        skyBot: '#98c9a3',
+        hillFar: '#4f8a6b',
+        hillNear: '#6ab04c',
+        platTop: '#badc58',
+        platBody: '#3d312e',
+        accent: '#f6e58d',
+        particleColor: 'rgba(255, 250, 205, 0.6)',
+        ambienceType: 'meadow'
+      },
+      {
+        id: 'mountain',
+        name: 'ภูเขาหมอกขาว',
+        enName: 'Misty Highlands',
+        unlockCost: 160,
+        unlockStage: 5,
+        skyTop: '#1e2749',
+        skyMid: '#4a5899',
+        skyBot: '#9bb1ff',
+        hillFar: '#3d4c7a',
+        hillNear: '#5c6b9c',
+        platTop: '#cbd5e1',
+        platBody: '#334155',
+        accent: '#e2e8f0',
+        particleColor: 'rgba(226, 232, 240, 0.5)',
+        ambienceType: 'wind'
+      },
+      {
+        id: 'sea',
+        name: 'ทะเลสีคราม',
+        enName: 'Azure Coast',
+        unlockCost: 250,
+        unlockStage: 7,
+        skyTop: '#0a365c',
+        skyMid: '#0e7490',
+        skyBot: '#67e8f9',
+        hillFar: '#0891b2',
+        hillNear: '#06b6d4',
+        platTop: '#fde047',
+        platBody: '#92400e',
+        accent: '#a5f3fc',
+        particleColor: 'rgba(165, 243, 252, 0.55)',
+        ambienceType: 'ocean'
+      },
+      {
+        id: 'sky',
+        name: 'เกาะลอยฟ้า',
+        enName: 'Aether Sky Islands',
+        unlockCost: 380,
+        unlockStage: 10,
+        skyTop: '#2e1f47',
+        skyMid: '#6b4c9a',
+        skyBot: '#f4a261',
+        hillFar: '#7b5ea7',
+        hillNear: '#9d7cd8',
+        platTop: '#fbcfe8',
+        platBody: '#4c1d95',
+        accent: '#fde68a',
+        particleColor: 'rgba(253, 230, 138, 0.6)',
+        ambienceType: 'wind'
+      },
+      {
+        id: 'night',
+        name: 'โลกกลางคืน',
+        enName: 'Starlight Sanctuary',
+        unlockCost: 520,
+        unlockStage: 13,
+        skyTop: '#050816',
+        skyMid: '#0f172a',
+        skyBot: '#1e1b4b',
+        hillFar: '#17153b',
+        hillNear: '#2e236c',
+        platTop: '#818cf8',
+        platBody: '#1e1b4b',
+        accent: '#fde047',
+        particleColor: 'rgba(253, 224, 71, 0.7)',
+        ambienceType: 'night'
+      },
+      {
+        id: 'fantasy',
+        name: 'โลกแฟนตาซี',
+        enName: 'Crystal Dreamscape',
+        unlockCost: 750,
+        unlockStage: 16,
+        skyTop: '#240b36',
+        skyMid: '#6a1b9a',
+        skyBot: '#ec4899',
+        hillFar: '#581c87',
+        hillNear: '#86198f',
+        platTop: '#5eead4',
+        platBody: '#3b0764',
+        accent: '#f472b6',
+        particleColor: 'rgba(244, 114, 182, 0.65)',
+        ambienceType: 'night'
+      }
+    ];
+
+    const CHARACTERS = [
+      {
+        id: 'pip',
+        name: 'Pip (วิญญาณต้นไม้)',
+        role: 'นักสำรวจแห่งป่า',
+        price: 0,
+        bodyColor: '#34d399',
+        bellyColor: '#ecfdf5',
+        scarfColor: '#fbbf24',
+        abilityName: 'สายลมลอยตัว (Breeze Boost)',
+        abilityDesc: 'ส่งตัวลอยขึ้นกลางอากาศอย่างนุ่มนวลและร่อนช้าลง 4 วินาที',
+        cooldown: 6
+      },
+      {
+        id: 'kumo',
+        name: 'Kumo (จิ้งจอกเมฆา)',
+        role: 'ผู้ว่องไวบนปุยเมฆ',
+        price: 150,
+        bodyColor: '#f8fafc',
+        bellyColor: '#e0f2fe',
+        scarfColor: '#38bdf8',
+        abilityName: 'พุ่งทะยานเมฆ (Cloud Dash)',
+        abilityDesc: 'พุ่งไปข้างหน้าอย่างรวดเร็วพร้อมเกราะป้องกันชั่วคราว',
+        cooldown: 5
+      },
+      {
+        id: 'luma',
+        name: 'Luma (นกฮูกดารา)',
+        role: 'ผู้พิทักษ์แสงดาว',
+        price: 300,
+        bodyColor: '#818cf8',
+        bellyColor: '#eef2ff',
+        scarfColor: '#fde047',
+        abilityName: 'แรงดึงดูดดารา (Star Magnet)',
+        abilityDesc: 'ดูดเหรียญและหัวใจทั้งหมดรอบตัวเข้าหาทันที 7 วินาที',
+        cooldown: 8
+      },
+      {
+        id: 'coral',
+        name: 'Coral (ภูตสายน้ำ)',
+        role: 'นักเดินทางแห่งท้องทะเล',
+        price: 500,
+        bodyColor: '#22d3ee',
+        bellyColor: '#ecfeff',
+        scarfColor: '#fb7185',
+        abilityName: 'ฟองสบู่พิทักษ์ (Bubble Shield)',
+        abilityDesc: 'สร้างฟองสบู่ป้องกันการชนอุปสรรคได้ 1 ครั้งและเพิ่มแรงกระโดด',
+        cooldown: 9
+      },
+      {
+        id: 'aether',
+        name: 'Aether (ผู้พิทักษ์คริสตัล)',
+        role: 'ตำนานแห่งโลกแฟนตาซี',
+        price: 850,
+        bodyColor: '#e879f9',
+        bellyColor: '#fdf4ff',
+        scarfColor: '#34d399',
+        abilityName: 'คลื่นแห่งความสงบ (Harmony Pulse)',
+        abilityDesc: 'เปลี่ยนอุปสรรครอบตัวให้กลายเป็นเหรียญโบนัสและฟื้นฟูหัวใจ 1 ดวง',
+        cooldown: 10
+      }
+    ];
+
+    const ACHIEVEMENTS_DEF = [
+      { id: 'first_step', title: 'ก้าวแรกที่ผ่อนคลาย', desc: 'เดินทางครบ 100 เมตรแรก', target: 100, stat: 'maxDistance', reward: 30 },
+      { id: 'coin_lover', title: 'นักสะสมประกายทอง', desc: 'เก็บเหรียญสะสมครบ 100 เหรียญ', target: 100, stat: 'totalCoinsCollected', reward: 50 },
+      { id: 'sky_jumper', title: 'นักกระโดดแห่งสายลม', desc: 'กระโดดครบ 50 ครั้ง', target: 50, stat: 'totalJumps', reward: 40 },
+      { id: 'checkpoint_master', title: 'นักเดินทางผู้มั่นคง', desc: 'ผ่านจุด Checkpoint ครบ 5 จุด', target: 5, stat: 'checkpointsReached', reward: 60 },
+      { id: 'long_journey', title: 'การเดินทางไร้ขอบเขต', desc: 'เดินทางไกลถึง 1,000 เมตร', target: 1000, stat: 'maxDistance', reward: 150 },
+      { id: 'wealthy_explorer', title: 'คลังสมบัติแห่งความสุข', desc: 'เก็บเหรียญสะสมครบ 500 เหรียญ', target: 500, stat: 'totalCoinsCollected', reward: 200 }
+    ];
+
+    /* =========================================================================
+       SECTION 2: RELIABLE SAVE & BACKUP SYSTEM (NO localStorage USED!)
+       Uses IndexedDB + Checksum Validation + Backup Slot + Firestore Cloud Sync
+       ========================================================================= */
+    const SaveSystem = {
+      DB_NAME: 'MiniWorldRelaxDB',
+      STORE_NAME: 'saveSlots',
+      data: null,
+      dbInstance: null,
+
+      getDefaultData() {
+        return {
+          version: 1,
+          currentStage: 1,
+          unlockedBiomes: ['forest'],
+          selectedStartBiome: 'forest',
+          lastMode: 'survival',
+          coins: 50, // Friendly starter gift
+          unlockedChars: ['pip'],
+          selectedChar: 'pip',
+          highScoreSurvival: 0,
+          highScoreImmortal: 0,
+          maxDistance: 0,
+          stats: {
+            totalCoinsCollected: 0,
+            totalJumps: 0,
+            checkpointsReached: 0,
+            gamesPlayed: 0
+          },
+          checkpoint: {
+            hasSavedRun: false,
+            mode: 'survival',
+            stage: 1,
+            biomeId: 'forest',
+            score: 0,
+            distance: 0,
+            hp: 5
+          },
+          dailyQuests: this.generateDailyQuests(),
+          claimedAchievements: [],
+          settings: {
+            bgm: 70,
+            sfx: 80,
+            amb: 65,
+            muted: false,
+            quality: 'auto',
+            touchUi: 'auto',
+            immortalHazards: true
+          }
+        };
+      },
+
+      generateDailyQuests() {
+        const today = new Date().toISOString().slice(0, 10);
+        return {
+          date: today,
+          tasks: [
+            { id: 'dq_coins', title: 'เก็บเหรียญระหว่างเดินทาง 30 เหรียญ', progress: 0, target: 30, reward: 45, claimed: false },
+            { id: 'dq_dist', title: 'เดินทางอย่างสบายใจครบ 300 เมตร', progress: 0, target: 300, reward: 55, claimed: false },
+            { id: 'dq_jump', title: 'กระโดดข้ามแพลตฟอร์ม 25 ครั้ง', progress: 0, target: 25, reward: 35, claimed: false }
+          ]
+        };
+      },
+
+      // FNV-1a 32-bit Checksum for Data Corruption Detection
+      computeChecksum(obj) {
+        const str = JSON.stringify(obj);
+        let hash = 0x811c9dc5;
+        for (let i = 0; i < str.length; i++) {
+          hash ^= str.charCodeAt(i);
+          hash = (hash * 0x01000193) >>> 0;
+        }
+        return hash.toString(16);
+      },
+
+      wrapWithIntegrity(payload) {
+        const clone = JSON.parse(JSON.stringify(payload));
+        return {
+          payload: clone,
+          checksum: this.computeChecksum(clone),
+          savedAt: Date.now()
+        };
+      },
+
+      verifyIntegrity(envelope) {
+        if (!envelope || !envelope.payload || !envelope.checksum) return false;
+        return this.computeChecksum(envelope.payload) === envelope.checksum;
+      },
+
+      async openIndexedDB() {
+        if (this.dbInstance) return this.dbInstance;
+        return new Promise((resolve) => {
+          if (!window.indexedDB) {
+            resolve(null);
+            return;
+          }
+          const req = indexedDB.open(this.DB_NAME, 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+              db.createObjectStore(this.STORE_NAME);
+            }
+          };
+          req.onsuccess = (e) => {
+            this.dbInstance = e.target.result;
+            resolve(this.dbInstance);
+          };
+          req.onerror = () => resolve(null);
+        });
+      },
+
+      async idbPut(key, value) {
+        const db = await this.openIndexedDB();
+        if (!db) return false;
+        return new Promise((resolve) => {
+          try {
+            const tx = db.transaction(this.STORE_NAME, 'readwrite');
+            tx.objectStore(this.STORE_NAME).put(value, key);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          } catch (e) {
+            resolve(false);
+          }
+        });
+      },
+
+      async idbGet(key) {
+        const db = await this.openIndexedDB();
+        if (!db) return null;
+        return new Promise((resolve) => {
+          try {
+            const tx = db.transaction(this.STORE_NAME, 'readonly');
+            const req = tx.objectStore(this.STORE_NAME).get(key);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+          } catch (e) {
+            resolve(null);
+          }
+        });
+      },
+
+      async init() {
+        await window.__CloudBridge?.init();
+        let loaded = null;
+
+        // 1. Try Cloud Save first if available, else IndexedDB main
+        const cloudMain = await window.__CloudBridge?.loadSlot('main');
+        const localMain = await this.idbGet('main');
+
+        if (this.verifyIntegrity(cloudMain) && (!this.verifyIntegrity(localMain) || cloudMain.savedAt >= localMain.savedAt)) {
+          loaded = cloudMain.payload;
+        } else if (this.verifyIntegrity(localMain)) {
+          loaded = localMain.payload;
+        } else {
+          // 2. Fallback to Backup Slot if main is missing or corrupted
+          const localBackup = await this.idbGet('backup');
+          const cloudBackup = await window.__CloudBridge?.loadSlot('backup');
+          if (this.verifyIntegrity(localBackup)) {
+            loaded = localBackup.payload;
+            UIController.showToast('กู้คืนข้อมูลจากเซฟสำรองอัตโนมัติสำเร็จ', 'info');
+          } else if (this.verifyIntegrity(cloudBackup)) {
+            loaded = cloudBackup.payload;
+            UIController.showToast('กู้คืนข้อมูลจากคลาวด์สำรองสำเร็จ', 'info');
+          }
+        }
+
+        const defaults = this.getDefaultData();
+        if (loaded) {
+          this.data = {
+            ...defaults,
+            ...loaded,
+            stats: { ...defaults.stats, ...(loaded.stats || {}) },
+            checkpoint: { ...defaults.checkpoint, ...(loaded.checkpoint || {}) },
+            settings: { ...defaults.settings, ...(loaded.settings || {}) }
+          };
+          // Refresh daily quests if new day
+          const today = new Date().toISOString().slice(0, 10);
+          if (!this.data.dailyQuests || this.data.dailyQuests.date !== today) {
+            this.data.dailyQuests = this.generateDailyQuests();
+          }
+        } else {
+          this.data = defaults;
+          await this.persistNow(false);
+        }
+
+        UIController.refreshAllUI();
+      },
+
+      async persistNow(showNotify = false) {
+        if (!this.data) return;
+        // Rotate previous valid main save into backup slot before overwriting
+        const prevMain = await this.idbGet('main');
+        if (this.verifyIntegrity(prevMain)) {
+          await this.idbPut('backup', prevMain);
+          window.__CloudBridge?.saveSlot('backup', prevMain);
+        }
+
+        const wrapped = this.wrapWithIntegrity(this.data);
+        await this.idbPut('main', wrapped);
+        window.__CloudBridge?.saveSlot('main', wrapped);
+
+        const statusText = document.getElementById('saveStatusText');
+        if (statusText) {
+          const now = new Date();
+          statusText.textContent = `บันทึกแล้ว (${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')})`;
+        }
+
+        if (showNotify) {
+          UIController.showToast('บันทึกความคืบหน้าและสำรองข้อมูลเรียบร้อย', 'success');
+        }
+      },
+
+      manualSave(notify = true) {
+        this.persistNow(notify);
+      },
+
+      async restoreBackup() {
+        const localBackup = await this.idbGet('backup');
+        const cloudBackup = await window.__CloudBridge?.loadSlot('backup');
+        const candidate = this.verifyIntegrity(localBackup) ? localBackup : (this.verifyIntegrity(cloudBackup) ? cloudBackup : null);
+
+        if (!candidate) {
+          UIController.showToast('ไม่พบข้อมูลเซฟสำรองก่อนหน้า', 'warn');
+          return;
+        }
+        this.data = candidate.payload;
+        await this.persistNow(false);
+        UIController.refreshAllUI();
+        UIController.showToast('กู้คืนเซฟเวอร์ชันก่อนหน้าเรียบร้อยแล้ว', 'success');
+      },
+
+      exportSaveFile() {
+        const wrapped = this.wrapWithIntegrity(this.data);
+        const blob = new Blob([JSON.stringify(wrapped, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mini-world-relax-save-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        UIController.showToast('ดาวน์โหลดไฟล์เซฟ (.JSON) สำเร็จ', 'success');
+      },
+
+      importSaveFile(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const parsed = JSON.parse(e.target.result);
+            if (!this.verifyIntegrity(parsed)) {
+              UIController.showToast('ไฟล์เซฟไม่ถูกต้องหรือข้อมูลเสียหาย', 'error');
+              return;
+            }
+            this.data = parsed.payload;
+            await this.persistNow(false);
+            UIController.refreshAllUI();
+            UIController.showToast('นำเข้าข้อมูลเซฟสำเร็จ!', 'success');
+          } catch (err) {
+            UIController.showToast('ไม่สามารถอ่านไฟล์เซฟได้', 'error');
+          }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+      },
+
+      async confirmResetAll() {
+        this.data = this.getDefaultData();
+        await this.persistNow(false);
+        UIController.refreshAllUI();
+        UIController.closeAllModals();
+        UIController.showToast('รีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นแล้ว', 'info');
+      },
+
+      recordQuestProgress(questId, amount) {
+        if (!this.data?.dailyQuests?.tasks) return;
+        const task = this.data.dailyQuests.tasks.find(t => t.id === questId);
+        if (task && !task.claimed) {
+          task.progress = Math.min(task.target, task.progress + amount);
+        }
+      },
+
+      claimDailyQuest(questId) {
+        const task = this.data.dailyQuests.tasks.find(t => t.id === questId);
+        if (!task || task.claimed || task.progress < task.target) return;
+        task.claimed = true;
+        this.data.coins += task.reward;
+        this.persistNow(false);
+        AudioEngine.playCoin();
+        UIController.refreshAllUI();
+        UIController.showToast(`รับรางวัลภารกิจ +${task.reward} เหรียญ!`, 'success');
+      },
+
+      claimAchievement(achId) {
+        const ach = ACHIEVEMENTS_DEF.find(a => a.id === achId);
+        if (!ach || this.data.claimedAchievements.includes(achId)) return;
+        const val = ach.stat === 'maxDistance' ? this.data.maxDistance : (this.data.stats[ach.stat] || 0);
+        if (val < ach.target) return;
+        this.data.claimedAchievements.push(achId);
+        this.data.coins += ach.reward;
+        this.persistNow(false);
+        AudioEngine.playStageUp();
+        UIController.refreshAllUI();
+        UIController.showToast(`ปลดล็อกรางวัลความสำเร็จ +${ach.reward} เหรียญ!`, 'success');
+      }
+    };
+
+    /* =========================================================================
+       SECTION 3: PROCEDURAL WEB AUDIO SYNTHESIZER (RELAXING BGM, AMBIENT & SFX)
+       Zero external audio URLs; works 100% offline with soft pentatonic music.
+       ========================================================================= */
+    const AudioEngine = {
+      ctx: null,
+      bgmGain: null,
+      sfxGain: null,
+      ambGain: null,
+      ambNode: null,
+      bgmTimer: null,
+      noteIndex: 0,
+      initialized: false,
+
+      // Soothing C Major Pentatonic + Lydian Frequencies
+      scaleNotes: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25],
+
+      unlock() {
+        if (this.initialized) {
+          if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+          return;
+        }
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+          this.bgmGain = this.ctx.createGain();
+          this.sfxGain = this.ctx.createGain();
+          this.ambGain = this.ctx.createGain();
+
+          this.bgmGain.connect(this.ctx.destination);
+          this.sfxGain.connect(this.ctx.destination);
+          this.ambGain.connect(this.ctx.destination);
+
+          this.applyVolumes();
+          this.startRelaxingBGM();
+          this.startAmbientSoundscape();
+          this.initialized = true;
+        } catch (e) {
+          console.warn('Web Audio unavailable:', e);
+        }
+      },
+
+      applyVolumes() {
+        if (!this.ctx || !SaveSystem.data) return;
+        const s = SaveSystem.data.settings;
+        const master = s.muted ? 0 : 1;
+        this.bgmGain.gain.setTargetAtTime((s.bgm / 100) * 0.14 * master, this.ctx.currentTime, 0.08);
+        this.sfxGain.gain.setTargetAtTime((s.sfx / 100) * 0.25 * master, this.ctx.currentTime, 0.05);
+        this.ambGain.gain.setTargetAtTime((s.amb / 100) * 0.06 * master, this.ctx.currentTime, 0.12);
+      },
+
+      startRelaxingBGM() {
+        if (this.bgmTimer) clearInterval(this.bgmTimer);
+        const pattern = [0, 2, 4, 5, 4, 2, 1, 3, 5, 7, 5, 3];
+        this.bgmTimer = setInterval(() => {
+          if (!this.ctx || this.ctx.state !== 'running' || SaveSystem.data?.settings?.muted) return;
+          const now = this.ctx.currentTime;
+          const freq = this.scaleNotes[pattern[this.noteIndex % pattern.length]];
+          this.noteIndex++;
+
+          // Soft Kalimba / Harp pluck
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.exponentialRampToValueAtTime(0.55, now + 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.0008, now + 2.4);
+
+          osc.connect(gain);
+          gain.connect(this.bgmGain);
+          osc.start(now);
+          osc.stop(now + 2.5);
+
+          // Warm Pad Bass every 4th beat
+          if (this.noteIndex % 4 === 1) {
+            const pad = this.ctx.createOscillator();
+            const padGain = this.ctx.createGain();
+            pad.type = 'triangle';
+            pad.frequency.setValueAtTime(freq * 0.5, now);
+            padGain.gain.setValueAtTime(0.001, now);
+            padGain.gain.linearRampToValueAtTime(0.3, now + 0.6);
+            padGain.gain.exponentialRampToValueAtTime(0.001, now + 3.8);
+            pad.connect(padGain);
+            padGain.connect(this.bgmGain);
+            pad.start(now);
+            pad.stop(now + 4.0);
+          }
+        }, 950);
+      },
+
+      startAmbientSoundscape() {
+        if (!this.ctx || this.ambNode) return;
+        // Generate gentle pink-like breeze buffer
+        const bufferSize = this.ctx.sampleRate * 3;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const output = buffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99765 * b0 + white * 0.0990460;
+          b1 = 0.96300 * b1 + white * 0.2965164;
+          b2 = 0.57000 * b2 + white * 1.0526913;
+          output[i] = (b0 + b1 + b2 + white * 0.1848) * 0.12;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 420;
+
+        noise.connect(filter);
+        filter.connect(this.ambGain);
+        noise.start(0);
+        this.ambNode = noise;
+      },
+
+      playJump(isDouble = false) {
+        if (!this.ctx || SaveSystem.data?.settings?.muted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const base = isDouble ? 360 : 260;
+        osc.frequency.setValueAtTime(base, now);
+        osc.frequency.exponentialRampToValueAtTime(base * 1.75, now + 0.18);
+
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.21);
+      },
+
+      playCoin(combo = 0) {
+        if (!this.ctx || SaveSystem.data?.settings?.muted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        const pitch = Math.min(1320, 660 + combo * 22);
+        osc.frequency.setValueAtTime(pitch, now);
+        osc.frequency.setValueAtTime(pitch * 1.25, now + 0.06);
+
+        gain.gain.setValueAtTime(0.45, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      },
+
+      playStageUp() {
+        if (!this.ctx || SaveSystem.data?.settings?.muted) return;
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((f, idx) => {
+          const now = this.ctx.currentTime + idx * 0.08;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+          osc.connect(gain);
+          gain.connect(this.sfxGain);
+          osc.start(now);
+          osc.stop(now + 0.48);
+        });
+      },
+
+      playSoftHit() {
+        if (!this.ctx || SaveSystem.data?.settings?.muted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(190, now);
+        osc.frequency.exponentialRampToValueAtTime(85, now + 0.25);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      }
+    };
+
+    /* =========================================================================
+       SECTION 4: OBJECT POOLING & PARTICLE SYSTEM (Zero Memory Leaks)
+       ========================================================================= */
+    class ParticlePool {
+      constructor(size = 240) {
+        this.pool = Array.from({ length: size }, () => ({
+          active: false, x: 0, y: 0, vx: 0, vy: 0,
+          size: 4, alpha: 1, decay: 1, color: '#ffffff', gravity: 0
+        }));
+      }
+
+      spawn(x, y, vx, vy, size, color, decay = 1.4, gravity = 0) {
+        for (let i = 0; i < this.pool.length; i++) {
+          const p = this.pool[i];
+          if (!p.active) {
+            p.active = true;
+            p.x = x; p.y = y; p.vx = vx; p.vy = vy;
+            p.size = size; p.alpha = 1; p.decay = decay;
+            p.color = color; p.gravity = gravity;
+            return;
+          }
+        }
+      }
+
+      burst(x, y, count, color, speed = 130, size = 4) {
+        for (let i = 0; i < count; i++) {
+          const ang = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+          const spd = speed * (0.4 + Math.random() * 0.7);
+          this.spawn(x, y, Math.cos(ang) * spd, Math.sin(ang) * spd, size * (0.7 + Math.random() * 0.6), color, 1.6, 120);
+        }
+      }
+
+      updateAndRender(ctx, dt, camX, camY, viewW, viewH) {
+        for (let i = 0; i < this.pool.length; i++) {
+          const p = this.pool[i];
+          if (!p.active) continue;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += p.gravity * dt;
+          p.alpha -= p.decay * dt;
+          if (p.alpha <= 0) {
+            p.active = false;
+            continue;
+          }
+          const sx = p.x - camX;
+          const sy = p.y - camY;
+          if (sx < -30 || sx > viewW + 30 || sy < -30 || sy > viewH + 30) continue;
+
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(sx, sy, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    /* =========================================================================
+       SECTION 5: 2D PROCEDURAL WORLD & GAMEPLAY ENGINE
+       ========================================================================= */
+    const GameApp = {
+      canvas: null,
+      ctx: null,
+      width: 0,
+      height: 0,
+      dpr: 1,
+      rafId: null,
+      lastTime: 0,
+
+      // State: 'menu' | 'playing' | 'paused' | 'gameover'
+      state: 'menu',
+      mode: 'survival', // 'survival' | 'immortal'
+      biomeIndex: 0,
+      stage: 1,
+      score: 0,
+      runCoins: 0,
+      distance: 0,
+      startX: 120,
+      coinCombo: 0,
+      coinComboTimer: 0,
+
+      // Adaptive Performance Tracking
+      fpsFrames: 0,
+      fpsTimer: 0,
+      lowPerfMode: false,
+
+      // Camera
+      camera: { x: 0, y: 0 },
+
+      // Player Physics Constants (Tuned for effortless, forgiving platforming)
+      GRAVITY: 1580,
+      JUMP_VEL: -620,
+      DOUBLE_JUMP_VEL: -540,
+      MOVE_SPEED: 315,
+
+      player: {
+        x: 120,
+        y: 260,
+        w: 34,
+        h: 38,
+        vx: 0,
+        vy: 0,
+        facing: 1,
+        onGround: false,
+        jumpsLeft: 2,
+        coyoteTimer: 0,
+        jumpBufferTimer: 0,
+        squashX: 1,
+        squashY: 1,
+        hp: 5,
+        maxHp: 5,
+        invulnTimer: 0,
+        shieldActive: false,
+        magnetTimer: 0,
+        glideTimer: 0,
+        abilityCooldown: 0,
+        animPhase: 0,
+        scarfPoints: []
+      },
+
+      // World Entities
+      platforms: [],
+      coins: [],
+      items: [],
+      hazards: [],
+      enemies: [],
+      checkpoints: [],
+      ambientMotes: [],
+      floatingPopups: [],
+      particles: new ParticlePool(260),
+
+      // Generation Cursor
+      genX: 0,
+      genY: 360,
+      platCounter: 0,
+      lastSafeCheckpoint: null,
+
+      // Input State
+      keys: { left: false, right: false, down: false },
+      joystick: { active: false, touchId: null, dx: 0, dy: 0 },
+
+      init() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d', { alpha: false });
+        this.handleResize();
+        window.addEventListener('resize', () => this.handleResize());
+
+        this.bindInputs();
+        this.initAmbientMotes();
+        this.resetDemoBackdrop();
+
+        // Start single unified game loop
+        this.lastTime = performance.now();
+        const loop = (now) => {
+          this.tick(now);
+          this.rafId = requestAnimationFrame(loop);
+        };
+        this.rafId = requestAnimationFrame(loop);
+      },
+
+      handleResize() {
+        const q = SaveSystem.data?.settings?.quality || 'auto';
+        const maxDpr = (q === 'low' || this.lowPerfMode) ? 1 : (q === 'high' ? 2 : 1.5);
+        this.dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+        this.width = window.innerWidth;
+        this.height = window.innerHeight;
+        this.canvas.width = Math.floor(this.width * this.dpr);
+        this.canvas.height = Math.floor(this.height * this.dpr);
+        this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      },
+
+      initAmbientMotes() {
+        this.ambientMotes = Array.from({ length: 42 }, () => ({
+          x: Math.random() * 1600,
+          y: Math.random() * 900,
+          r: 1.5 + Math.random() * 3,
+          vx: -12 - Math.random() * 20,
+          vy: -6 + Math.random() * 12,
+          phase: Math.random() * Math.PI * 2
+        }));
+      },
+
+      resetDemoBackdrop() {
+        const startBiome = SaveSystem.data?.selectedStartBiome || 'forest';
+        const bIdx = BIOMES.findIndex(b => b.id === startBiome);
+        this.biomeIndex = bIdx >= 0 ? bIdx : 0;
+        this.platforms = [];
+        this.coins = [];
+        this.items = [];
+        this.hazards = [];
+        this.enemies = [];
+        this.checkpoints = [];
+        this.genX = -100;
+        this.genY = Math.min(480, this.height * 0.65);
+        this.platCounter = 0;
+
+        // Build scenic starting ground
+        this.addPlatform(-100, this.genY, 520, 44, 'ground', true);
+        this.genX = 460;
+        for (let i = 0; i < 12; i++) {
+          this.generateNextSegment(true);
+        }
+        this.player.x = 140;
+        this.player.y = this.genY - this.player.h;
+        this.player.vx = 0;
+        this.player.vy = 0;
+        this.camera.x = 0;
+        this.camera.y = Math.max(0, this.genY - this.height * 0.62);
+      },
+
+      startNewGame(selectedMode, resumeCheckpoint = null) {
+        AudioEngine.unlock();
+        UIController.closeAllModals();
+
+        this.mode = selectedMode || 'survival';
+        SaveSystem.data.lastMode = this.mode;
+        SaveSystem.data.stats.gamesPlayed++;
+
+        const startBiomeId = resumeCheckpoint?.biomeId || SaveSystem.data.selectedStartBiome || 'forest';
+        const foundIdx = BIOMES.findIndex(b => b.id === startBiomeId);
+        this.biomeIndex = foundIdx >= 0 ? foundIdx : 0;
+
+        this.stage = resumeCheckpoint?.stage || 1;
+        this.score = resumeCheckpoint?.score || 0;
+        this.distance = resumeCheckpoint?.distance || 0;
+        this.runCoins = 0;
+        this.coinCombo = 0;
+
+        // Reset Entities
+        this.platforms = [];
+        this.coins = [];
+        this.items = [];
+        this.hazards = [];
+        this.enemies = [];
+        this.checkpoints = [];
+        this.floatingPopups = [];
+
+        const baseY = Math.min(480, this.height * 0.65);
+        this.genX = -80;
+        this.genY = baseY;
+        this.platCounter = 0;
+
+        // Safe starter sanctuary platform
+        this.addPlatform(-80, baseY, 480, 48, 'sanctuary', true);
+        this.genX = 450;
+
+        for (let i = 0; i < 16; i++) {
+          this.generateNextSegment(false);
+        }
+
+        // Reset Player
+        const p = this.player;
+        p.x = 120;
+        p.y = baseY - p.h - 4;
+        p.vx = 0;
+        p.vy = 0;
+        p.facing = 1;
+        p.onGround = true;
+        p.jumpsLeft = 2;
+        p.hp = resumeCheckpoint?.hp || 5;
+        p.maxHp = 5;
+        p.invulnTimer = 1.2;
+        p.shieldActive = false;
+        p.magnetTimer = 0;
+        p.glideTimer = 0;
+        p.abilityCooldown = 0;
+        p.scarfPoints = Array.from({ length: 6 }, () => ({ x: p.x, y: p.y + 16 }));
+
+        this.startX = p.x - (this.distance * 10);
+        this.camera.x = 0;
+        this.camera.y = Math.max(0, baseY - this.height * 0.62);
+
+        this.lastSafeCheckpoint = {
+          mode: this.mode,
+          stage: this.stage,
+          biomeId: BIOMES[this.biomeIndex].id,
+          score: this.score,
+          distance: this.distance,
+          hp: p.hp
+        };
+
+        this.state = 'playing';
+        document.getElementById('mainMenuOverlay').classList.add('hidden');
+        document.getElementById('gameHud').classList.remove('hidden');
+        this.updateHudElements();
+        UIController.updateTouchControlsVisibility();
+      },
+
+      continueSavedGame() {
+        const cp = SaveSystem.data?.checkpoint;
+        if (cp && cp.hasSavedRun) {
+          this.startNewGame(cp.mode || 'survival', cp);
+          UIController.showToast(`เล่นต่อจากด่าน ${cp.stage} (${BIOMES.find(b => b.id === cp.biomeId)?.name || ''})`, 'success');
+        } else {
+          this.startNewGame(SaveSystem.data?.lastMode || 'survival');
+        }
+      },
+
+      continueFromLastCheckpoint() {
+        if (this.lastSafeCheckpoint) {
+          this.startNewGame(this.lastSafeCheckpoint.mode, this.lastSafeCheckpoint);
+        } else {
+          this.startNewGame(this.mode);
+        }
+      },
+
+      pauseGame() {
+        if (this.state !== 'playing') return;
+        this.state = 'paused';
+        UIController.openModal('pauseModal');
+      },
+
+      resumeGame() {
+        if (this.state !== 'paused') return;
+        UIController.closeAllModals();
+        this.lastTime = performance.now();
+        this.state = 'playing';
+      },
+
+      returnToMenu() {
+        this.state = 'menu';
+        UIController.closeAllModals();
+        document.getElementById('gameHud').classList.add('hidden');
+        document.getElementById('mainMenuOverlay').classList.remove('hidden');
+        this.resetDemoBackdrop();
+        UIController.refreshAllUI();
+      },
+
+      manualSaveCurrent() {
+        if (this.state === 'playing' || this.state === 'paused') {
+          this.saveCheckpointState(true);
+        } else {
+          SaveSystem.manualSave(true);
+        }
+      },
+
+      saveCheckpointState(notify = false) {
+        const currentBiome = BIOMES[this.biomeIndex].id;
+        const cp = {
+          hasSavedRun: true,
+          mode: this.mode,
+          stage: this.stage,
+          biomeId: currentBiome,
+          score: Math.floor(this.score),
+          distance: Math.floor(this.distance),
+          hp: Math.max(1, this.player.hp)
+        };
+        this.lastSafeCheckpoint = cp;
+        SaveSystem.data.checkpoint = cp;
+        SaveSystem.data.currentStage = Math.max(SaveSystem.data.currentStage, this.stage);
+        SaveSystem.data.lastMode = this.mode;
+        if (this.mode === 'survival') {
+          SaveSystem.data.highScoreSurvival = Math.max(SaveSystem.data.highScoreSurvival, Math.floor(this.score));
+        } else {
+          SaveSystem.data.highScoreImmortal = Math.max(SaveSystem.data.highScoreImmortal, Math.floor(this.score));
+        }
+        SaveSystem.data.maxDistance = Math.max(SaveSystem.data.maxDistance, Math.floor(this.distance));
+        SaveSystem.persistNow(notify);
+      },
+
+      toggleImmortalObstacles() {
+        if (this.mode !== 'immortal') return;
+        SaveSystem.data.settings.immortalHazards = !SaveSystem.data.settings.immortalHazards;
+        const enabled = SaveSystem.data.settings.immortalHazards;
+        document.getElementById('hudObstacleLabel').textContent = enabled ? 'อุปสรรค: เปิด' : 'อุปสรรค: ปิด';
+        SaveSystem.persistNow(false);
+        UIController.showToast(enabled ? 'เปิดการแสดงอุปสรรคในโหมดอมตะแล้ว' : 'ปิดอุปสรรคทั้งหมดแล้ว เดินชมวิวได้เต็มที่!', 'info');
+      },
+
+      /* -----------------------------------------------------------------------
+         ENDLESS PROCEDURAL LEVEL GENERATOR (Guaranteed Reachable Physics Check)
+         ----------------------------------------------------------------------- */
+      addPlatform(x, y, w, h, kind = 'normal', safeRest = false) {
+        this.platforms.push({
+          x, y, w, h, kind, safeRest,
+          baseX: x, baseY: y,
+          moveAxis: kind === 'moving' ? (Math.random() < 0.5 ? 'x' : 'y') : null,
+          moveRange: kind === 'moving' ? 55 : 0,
+          movePhase: Math.random() * Math.PI * 2,
+          bounceAnim: 0
+        });
+      },
+
+      generateNextSegment(isDemo = false) {
+        this.platCounter++;
+
+        // Adaptive Difficulty Factor (0.0 -> 1.0 very gently over 25 stages)
+        const rawDiff = Math.min(1, (this.stage - 1) / 24);
+        const hpRelief = (this.mode === 'survival' && this.player.hp <= 2) ? 0.65 : 1.0;
+        const diff = rawDiff * hpRelief;
+
+        // Every 6th platform is a wide, stress-free Rest Sanctuary / Checkpoint
+        const isRestHaven = (this.platCounter % 6 === 0);
+
+        // Physics-validated horizontal gap (Max comfortable jump reach is ~340px; cap at 235px)
+        const minGap = 65;
+        const maxGap = isRestHaven ? 125 : Math.floor(135 + diff * 95);
+        const gap = minGap + Math.random() * (maxGap - minGap);
+
+        // Physics-validated vertical delta (Double jump reaches ~215px; cap upward climb at 120px)
+        const maxUpStep = 115;
+        const maxDownStep = 140;
+        let deltaY = (Math.random() * (maxUpStep + maxDownStep)) - maxUpStep;
+
+        // Keep altitude within comfortable scenic corridor
+        const minAltitude = 160;
+        const maxAltitude = Math.max(440, this.height * 0.76);
+        let nextY = Math.max(minAltitude, Math.min(maxAltitude, this.genY + deltaY));
+
+        // Double-check reachability constraint: if going up, ensure delta <= 115px
+        if (this.genY - nextY > maxUpStep) {
+          nextY = this.genY - maxUpStep;
+        }
+
+        const platWidth = isRestHaven
+          ? 270 + Math.random() * 70
+          : Math.max(125, (230 - diff * 65) + Math.random() * 75);
+
+        let platKind = 'normal';
+        if (!isRestHaven && this.stage >= 2) {
+          const roll = Math.random();
+          if (roll < 0.14 + diff * 0.1) platKind = 'moving';
+          else if (roll < 0.24) platKind = 'bouncy';
+        }
+
+        const nextX = this.genX + gap;
+        this.addPlatform(nextX, nextY, platWidth, 28, isRestHaven ? 'sanctuary' : platKind, isRestHaven);
+
+        // Spawn Checkpoint Arch on every 2nd Rest Haven
+        if (isRestHaven && !isDemo) {
+          this.checkpoints.push({
+            x: nextX + platWidth * 0.5,
+            y: nextY,
+            activated: false,
+            stageNum: this.stage + Math.floor(this.platCounter / 6)
+          });
+        }
+
+        // Spawn Relaxing Coin Arc above gap or platform
+        if (Math.random() < 0.82) {
+          const coinCount = isRestHaven ? 5 : (3 + Math.floor(Math.random() * 3));
+          const arcStartX = nextX + 24;
+          const arcSpan = Math.max(60, platWidth - 48);
+          for (let c = 0; c < coinCount; c++) {
+            const t = coinCount === 1 ? 0.5 : c / (coinCount - 1);
+            const cx = arcStartX + t * arcSpan;
+            const cy = nextY - 38 - Math.sin(t * Math.PI) * 34;
+            this.coins.push({
+              x: cx, y: cy, r: 10,
+              collected: false,
+              bobPhase: c * 0.6
+            });
+          }
+        }
+
+        // Spawn Helpful Items (Heart, Magnet, Shield) — never blocked by hazards
+        if (!isDemo && isRestHaven && Math.random() < 0.65) {
+          const itemTypes = (this.mode === 'survival' && this.player.hp < this.player.maxHp)
+            ? ['heart', 'heart', 'magnet', 'shield']
+            : ['magnet', 'shield', 'heart'];
+          const chosenType = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+          this.items.push({
+            x: nextX + platWidth * 0.25,
+            y: nextY - 34,
+            type: chosenType,
+            collected: false,
+            phase: Math.random() * Math.PI * 2
+          });
+        }
+
+        // Spawn Gentle Obstacles / Patrolling Creatures ONLY on wide non-rest normal platforms
+        if (!isDemo && !isRestHaven && platKind === 'normal' && platWidth >= 165 && this.stage >= 1) {
+          const hazardChance = Math.min(0.45, 0.14 + diff * 0.28);
+          if (Math.random() < hazardChance) {
+            if (Math.random() < 0.55) {
+              // Gentle patrolling creature (walks slowly back and forth on platform)
+              this.enemies.push({
+                x: nextX + platWidth * 0.5,
+                y: nextY - 24,
+                w: 28,
+                h: 24,
+                minX: nextX + 18,
+                maxX: nextX + platWidth - 46,
+                vx: (42 + diff * 35) * (Math.random() < 0.5 ? 1 : -1),
+                phase: 0
+              });
+            } else {
+              // Small crystal thorn cluster with plenty of jump room on both sides
+              this.hazards.push({
+                x: nextX + platWidth * 0.5 - 14,
+                y: nextY - 16,
+                w: 28,
+                h: 16
+              });
+            }
+          }
+        }
+
+        this.genX = nextX + platWidth;
+        this.genY = nextY;
+      },
+
+      /* -----------------------------------------------------------------------
+         PLAYER ACTIONS: JUMP, DOUBLE JUMP, SPECIAL ABILITY
+         ----------------------------------------------------------------------- */
+      triggerJump() {
+        if (this.state !== 'playing') return;
+        AudioEngine.unlock();
+        this.player.jumpBufferTimer = 0.13;
+      },
+
+      executeJumpIfBuffered() {
+        const p = this.player;
+        if (p.jumpBufferTimer <= 0) return;
+
+        if (p.coyoteTimer > 0) {
+          // Primary Ground / Coyote Jump
+          p.vy = this.JUMP_VEL;
+          p.onGround = false;
+          p.coyoteTimer = 0;
+          p.jumpBufferTimer = 0;
+          p.jumpsLeft = 1;
+          p.squashX = 0.76;
+          p.squashY = 1.28;
+          AudioEngine.playJump(false);
+          this.particles.burst(p.x + p.w / 2, p.y + p.h, 8, '#a7f3d0', 95, 3.5);
+          SaveSystem.data.stats.totalJumps++;
+          SaveSystem.recordQuestProgress('dq_jump', 1);
+        } else if (p.jumpsLeft > 0) {
+          // Double Jump in Mid-Air
+          p.vy = this.DOUBLE_JUMP_VEL;
+          p.jumpsLeft--;
+          p.jumpBufferTimer = 0;
+          p.squashX = 0.8;
+          p.squashY = 1.22;
+          AudioEngine.playJump(true);
+          this.particles.burst(p.x + p.w / 2, p.y + p.h, 12, '#7dd3fc', 120, 4);
+          SaveSystem.data.stats.totalJumps++;
+          SaveSystem.recordQuestProgress('dq_jump', 1);
+        }
+      },
+
+      triggerSpecialAbility() {
+        if (this.state !== 'playing') return;
+        AudioEngine.unlock();
+        const p = this.player;
+        if (p.abilityCooldown > 0) return;
+
+        const charDef = CHARACTERS.find(c => c.id === SaveSystem.data.selectedChar) || CHARACTERS[0];
+        p.abilityCooldown = charDef.cooldown;
+        AudioEngine.playStageUp();
+
+        if (charDef.id === 'pip') {
+          p.vy = -520;
+          p.glideTimer = 4.2;
+          p.jumpsLeft = 1;
+          this.particles.burst(p.x + p.w / 2, p.y + p.h / 2, 18, '#34d399', 160, 4.5);
+          this.addFloatingPopup(p.x, p.y - 20, 'สายลมลอยตัว!', '#6ee7b7');
+        } else if (charDef.id === 'kumo') {
+          p.vx = p.facing * 680;
+          p.vy = -120;
+          p.invulnTimer = Math.max(p.invulnTimer, 1.5);
+          this.particles.burst(p.x + p.w / 2, p.y + p.h / 2, 20, '#38bdf8', 180, 5);
+          this.addFloatingPopup(p.x, p.y - 20, 'พุ่งทะยานเมฆ!', '#7dd3fc');
+        } else if (charDef.id === 'luma') {
+          p.magnetTimer = 7.0;
+          this.particles.burst(p.x + p.w / 2, p.y + p.h / 2, 20, '#fde047', 160, 4.5);
+          this.addFloatingPopup(p.x, p.y - 20, 'แรงดึงดูดดารา!', '#fef08a');
+        } else if (charDef.id === 'coral') {
+          p.shieldActive = true;
+          p.vy = -440;
+          this.particles.burst(p.x + p.w / 2, p.y + p.h / 2, 20, '#22d3ee', 150, 5);
+          this.addFloatingPopup(p.x, p.y - 20, 'ฟองสบู่พิทักษ์!', '#67e8f9');
+        } else if (charDef.id === 'aether') {
+          // Transform nearby hazards/enemies into bonus coins & restore 1 HP
+          let converted = 0;
+          this.hazards = this.hazards.filter(h => {
+            if (Math.hypot(h.x - p.x, h.y - p.y) < 360) {
+              this.coins.push({ x: h.x + 14, y: h.y - 10, r: 10, collected: false, bobPhase: 0 });
+              converted++;
+              return false;
+            }
+            return true;
+          });
+          this.enemies = this.enemies.filter(e => {
+            if (Math.hypot(e.x - p.x, e.y - p.y) < 360) {
+              this.coins.push({ x: e.x + 14, y: e.y, r: 10, collected: false, bobPhase: 0 });
+              converted++;
+              return false;
+            }
+            return true;
+          });
+          if (this.mode === 'survival' && p.hp < p.maxHp) {
+            p.hp++;
+            this.updateHudElements();
+          }
+          this.particles.burst(p.x + p.w / 2, p.y + p.h / 2, 26, '#e879f9', 200, 5);
+          this.addFloatingPopup(p.x, p.y - 20, 'คลื่นแห่งความสงบ!', '#f5d0fe');
+        }
+      },
+
+      addFloatingPopup(x, y, text, color = '#ffffff') {
+        this.floatingPopups.push({ x, y, text, color, alpha: 1, vy: -42 });
+      },
+
+      /* -----------------------------------------------------------------------
+         MAIN UPDATE LOOP (Delta-Time Driven)
+         ----------------------------------------------------------------------- */
+      tick(now) {
+        const rawDt = (now - this.lastTime) / 1000;
+        this.lastTime = now;
+        const dt = Math.min(rawDt, 0.05); // Clamp dt for stability on tab switch
+
+        // Rolling FPS Performance Monitor for entry-level phones
+        this.fpsFrames++;
+        this.fpsTimer += rawDt;
+        if (this.fpsTimer >= 2.0) {
+          const fps = this.fpsFrames / this.fpsTimer;
+          if (fps < 40 && !this.lowPerfMode && (SaveSystem.data?.settings?.quality || 'auto') === 'auto') {
+            this.lowPerfMode = true;
+            this.handleResize();
+          }
+          this.fpsFrames = 0;
+          this.fpsTimer = 0;
+        }
+
+        if (this.state === 'menu') {
+          // Gentle scenic camera drift in background
+          this.camera.x += 28 * dt;
+          if (this.genX - this.camera.x < this.width + 400) {
+            this.generateNextSegment(true);
+          }
+          this.cleanupOffscreenEntities();
+          this.render(dt);
+          return;
+        }
+
+        if (this.state !== 'playing') {
+          this.render(0);
+          return;
+        }
+
+        this.updateGameplay(dt);
+        this.render(dt);
+      },
+
+      updateGameplay(dt) {
+        const p = this.player;
+
+        // Timers
+        if (p.coyoteTimer > 0) p.coyoteTimer -= dt;
+        if (p.jumpBufferTimer > 0) p.jumpBufferTimer -= dt;
+        if (p.invulnTimer > 0) p.invulnTimer -= dt;
+        if (p.magnetTimer > 0) p.magnetTimer -= dt;
+        if (p.glideTimer > 0) p.glideTimer -= dt;
+        if (p.abilityCooldown > 0) {
+          p.abilityCooldown = Math.max(0, p.abilityCooldown - dt);
+          const cdEl = document.getElementById('abilityCooldownText');
+          if (cdEl) cdEl.textContent = p.abilityCooldown > 0 ? `${Math.ceil(p.abilityCooldown)}วิ` : 'พลัง';
+        }
+        if (this.coinComboTimer > 0) {
+          this.coinComboTimer -= dt;
+          if (this.coinComboTimer <= 0) this.coinCombo = 0;
+        }
+
+        // Squash & Stretch recovery
+        p.squashX += (1 - p.squashX) * Math.min(1, dt * 14);
+        p.squashY += (1 - p.squashY) * Math.min(1, dt * 14);
+
+        // Horizontal Movement Input (Keyboard + Virtual Joystick)
+        let moveInput = 0;
+        if (this.keys.left) moveInput -= 1;
+        if (this.keys.right) moveInput += 1;
+        if (this.joystick.active) moveInput = this.joystick.dx;
+
+        if (Math.abs(moveInput) > 0.08) {
+          p.facing = moveInput > 0 ? 1 : -1;
+          const targetVx = moveInput * this.MOVE_SPEED;
+          p.vx += (targetVx - p.vx) * Math.min(1, dt * 14);
+          p.animPhase += dt * 11;
+        } else {
+          p.vx *= Math.pow(0.001, dt);
+          p.animPhase += dt * 3;
+        }
+
+        this.executeJumpIfBuffered();
+
+        // Gravity (Gentler if gliding)
+        const activeGravity = (p.glideTimer > 0 && p.vy > 0) ? this.GRAVITY * 0.32 : this.GRAVITY;
+        p.vy = Math.min(820, p.vy + activeGravity * dt);
+
+        // Update Moving Platforms
+        for (let i = 0; i < this.platforms.length; i++) {
+          const plat = this.platforms[i];
+          if (plat.bounceAnim > 0) plat.bounceAnim = Math.max(0, plat.bounceAnim - dt * 4);
+          if (plat.kind === 'moving') {
+            plat.movePhase += dt * 1.6;
+            const prevX = plat.x;
+            const prevY = plat.y;
+            if (plat.moveAxis === 'x') {
+              plat.x = plat.baseX + Math.sin(plat.movePhase) * plat.moveRange;
+            } else {
+              plat.y = plat.baseY + Math.sin(plat.movePhase) * (plat.moveRange * 0.7);
+            }
+            plat.deltaX = plat.x - prevX;
+            plat.deltaY = plat.y - prevY;
+          } else {
+            plat.deltaX = 0;
+            plat.deltaY = 0;
+          }
+        }
+
+        // Integrate Player Position & Platform Collision
+        const prevBottom = p.y + p.h;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+
+        // Prevent walking off left edge of camera
+        if (p.x < this.camera.x + 12) {
+          p.x = this.camera.x + 12;
+          if (p.vx < 0) p.vx = 0;
+        }
+
+        let landedPlatform = null;
+        if (p.vy >= 0) {
+          for (let i = 0; i < this.platforms.length; i++) {
+            const plat = this.platforms[i];
+            if (
+              p.x + p.w * 0.78 > plat.x &&
+              p.x + p.w * 0.22 < plat.x + plat.w &&
+              prevBottom <= plat.y + 12 &&
+              p.y + p.h >= plat.y
+            ) {
+              landedPlatform = plat;
+              break;
+            }
+          }
+        }
+
+        if (landedPlatform) {
+          if (!p.onGround && p.vy > 220) {
+            p.squashX = 1.24;
+            p.squashY = 0.78;
+            this.particles.burst(p.x + p.w / 2, landedPlatform.y, 6, '#e2e8f0', 70, 3);
+          }
+
+          if (landedPlatform.kind === 'bouncy') {
+            p.y = landedPlatform.y - p.h;
+            p.vy = this.JUMP_VEL * 1.32;
+            p.onGround = false;
+            p.jumpsLeft = 2;
+            landedPlatform.bounceAnim = 1;
+            AudioEngine.playJump(true);
+            this.particles.burst(p.x + p.w / 2, landedPlatform.y, 12, '#f472b6', 130, 4);
+          } else {
+            p.y = landedPlatform.y - p.h;
+            p.vy = 0;
+            p.onGround = true;
+            p.jumpsLeft = 2;
+            p.coyoteTimer = 0.13;
+            p.x += landedPlatform.deltaX || 0;
+          }
+        } else {
+          p.onGround = false;
+        }
+
+        // Scarf Trail Physics
+        if (p.scarfPoints.length > 0) {
+          p.scarfPoints[0].x = p.x + p.w * 0.5 - p.facing * 6;
+          p.scarfPoints[0].y = p.y + 20;
+          for (let i = 1; i < p.scarfPoints.length; i++) {
+            const prev = p.scarfPoints[i - 1];
+            const curr = p.scarfPoints[i];
+            curr.x += ((prev.x - p.facing * 7) - curr.x) * Math.min(1, dt * 18);
+            curr.y += ((prev.y + Math.sin(p.animPhase + i) * 1.5) - curr.y) * Math.min(1, dt * 18);
+          }
+        }
+
+        // Update Distance, Score, Stage & Dynamic Biome Transitions
+        const currentDist = Math.max(0, Math.floor((p.x - this.startX) / 10));
+        if (currentDist > this.distance) {
+          const diffDist = currentDist - this.distance;
+          this.distance = currentDist;
+          this.score += diffDist * 2;
+          SaveSystem.recordQuestProgress('dq_dist', diffDist);
+
+          // Advance Stage every 150 meters
+          const calculatedStage = 1 + Math.floor(this.distance / 150);
+          if (calculatedStage > this.stage) {
+            this.stage = calculatedStage;
+            AudioEngine.playStageUp();
+            this.addFloatingPopup(p.x, p.y - 36, `ผ่านด่านที่ ${this.stage}!`, '#34d399');
+
+            // Transition Biome every 2 stages seamlessly
+            if (this.stage % 2 === 1) {
+              this.biomeIndex = (this.biomeIndex + 1) % BIOMES.length;
+              const newBiome = BIOMES[this.biomeIndex];
+              if (!SaveSystem.data.unlockedBiomes.includes(newBiome.id)) {
+                SaveSystem.data.unlockedBiomes.push(newBiome.id);
+                UIController.showToast(`ค้นพบโลกใหม่: ${newBiome.name}!`, 'success');
+              } else {
+                this.addFloatingPopup(p.x, p.y - 60, `เข้าสู่ ${newBiome.name}`, '#7dd3fc');
+              }
+            }
+            this.saveCheckpointState(false);
+          }
+        }
+
+        // Checkpoints Activation
+        for (let i = 0; i < this.checkpoints.length; i++) {
+          const cp = this.checkpoints[i];
+          if (!cp.activated && Math.abs(p.x + p.w / 2 - cp.x) < 42 && Math.abs(p.y + p.h - cp.y) < 60) {
+            cp.activated = true;
+            SaveSystem.data.stats.checkpointsReached++;
+            AudioEngine.playStageUp();
+            this.particles.burst(cp.x, cp.y - 30, 18, '#34d399', 140, 4);
+            this.addFloatingPopup(cp.x, cp.y - 52, 'บันทึกจุด Checkpoint!', '#6ee7b7');
+            this.saveCheckpointState(false);
+          }
+        }
+
+        // Coins Collection (with Magnet support)
+        for (let i = 0; i < this.coins.length; i++) {
+          const c = this.coins[i];
+          if (c.collected) continue;
+          c.bobPhase += dt * 4;
+
+          if (p.magnetTimer > 0) {
+            const distToP = Math.hypot((p.x + p.w / 2) - c.x, (p.y + p.h / 2) - c.y);
+            if (distToP < 340) {
+              c.x += ((p.x + p.w / 2) - c.x) * Math.min(1, dt * 8);
+              c.y += ((p.y + p.h / 2) - c.y) * Math.min(1, dt * 8);
+            }
+          }
+
+          if (Math.hypot((p.x + p.w / 2) - c.x, (p.y + p.h / 2) - c.y) < 30) {
+            c.collected = true;
+            this.runCoins++;
+            this.score += 15;
+            this.coinCombo++;
+            this.coinComboTimer = 1.6;
+            SaveSystem.data.coins++;
+            SaveSystem.data.stats.totalCoinsCollected++;
+            SaveSystem.recordQuestProgress('dq_coins', 1);
+            AudioEngine.playCoin(this.coinCombo);
+            this.particles.burst(c.x, c.y, 7, '#fde047', 90, 3);
+          }
+        }
+
+        // Helpful Items Collection
+        for (let i = 0; i < this.items.length; i++) {
+          const it = this.items[i];
+          if (it.collected) continue;
+          it.phase += dt * 3.5;
+          if (Math.hypot((p.x + p.w / 2) - it.x, (p.y + p.h / 2) - it.y) < 34) {
+            it.collected = true;
+            AudioEngine.playStageUp();
+            if (it.type === 'heart') {
+              if (this.mode === 'survival' && p.hp < p.maxHp) {
+                p.hp++;
+                this.addFloatingPopup(it.x, it.y - 18, '+1 พลังชีวิต', '#fda4af');
+              } else {
+                this.score += 100;
+                this.addFloatingPopup(it.x, it.y - 18, '+100 โบนัส!', '#fda4af');
+              }
+              this.particles.burst(it.x, it.y, 12, '#fb7185', 110, 4);
+            } else if (it.type === 'magnet') {
+              p.magnetTimer = 8.0;
+              this.addFloatingPopup(it.x, it.y - 18, 'แม่เหล็กดูดเหรียญ!', '#fde047');
+              this.particles.burst(it.x, it.y, 12, '#fbbf24', 110, 4);
+            } else if (it.type === 'shield') {
+              p.shieldActive = true;
+              this.addFloatingPopup(it.x, it.y - 18, 'เกราะป้องกัน!', '#7dd3fc');
+              this.particles.burst(it.x, it.y, 12, '#38bdf8', 110, 4);
+            }
+          }
+        }
+
+        // Enemies & Hazards Interaction
+        const hazardsActive = (this.mode === 'survival') || (this.mode === 'immortal' && SaveSystem.data.settings.immortalHazards);
+
+        for (let i = 0; i < this.enemies.length; i++) {
+          const e = this.enemies[i];
+          e.x += e.vx * dt;
+          e.phase += dt * 6;
+          if (e.x <= e.minX) { e.x = e.minX; e.vx = Math.abs(e.vx); }
+          if (e.x >= e.maxX) { e.x = e.maxX; e.vx = -Math.abs(e.vx); }
+
+          if (!hazardsActive) continue;
+          if (this.checkAABB(p.x + 5, p.y + 4, p.w - 10, p.h - 6, e.x + 3, e.y + 3, e.w - 6, e.h - 4)) {
+            // Stomp from above defeats enemy gently!
+            if (p.vy > 0 && p.y + p.h - p.vy * dt <= e.y + 10) {
+              p.vy = this.JUMP_VEL * 0.85;
+              p.jumpsLeft = 2;
+              e.defeated = true;
+              this.score += 50;
+              AudioEngine.playCoin(4);
+              this.particles.burst(e.x + e.w / 2, e.y + e.h / 2, 12, '#a7f3d0', 110, 4);
+              this.addFloatingPopup(e.x, e.y - 15, '+50!', '#6ee7b7');
+            } else {
+              this.handlePlayerHazardTouch();
+            }
+          }
+        }
+        this.enemies = this.enemies.filter(e => !e.defeated);
+
+        if (hazardsActive) {
+          for (let i = 0; i < this.hazards.length; i++) {
+            const h = this.hazards[i];
+            if (this.checkAABB(p.x + 6, p.y + 6, p.w - 12, p.h - 8, h.x + 4, h.y + 4, h.w - 8, h.h - 4)) {
+              this.handlePlayerHazardTouch();
+            }
+          }
+        }
+
+        // Falling Below World Floor
+        const fallLimit = Math.max(700, this.height + 160);
+        if (p.y > fallLimit) {
+          this.handlePlayerFall();
+        }
+
+        // Smooth Camera Follow
+        const targetCamX = p.x - this.width * 0.3;
+        if (targetCamX > this.camera.x) {
+          this.camera.x += (targetCamX - this.camera.x) * Math.min(1, dt * 7);
+        }
+        const targetCamY = Math.max(-80, Math.min(260, p.y - this.height * 0.56));
+        this.camera.y += (targetCamY - this.camera.y) * Math.min(1, dt * 4);
+
+        // Endless Ahead Generation & Off-screen Culling
+        while (this.genX < this.camera.x + this.width + 650) {
+          this.generateNextSegment(false);
+        }
+        this.cleanupOffscreenEntities();
+
+        // Update Floating Popups
+        for (let i = this.floatingPopups.length - 1; i >= 0; i--) {
+          const fp = this.floatingPopups[i];
+          fp.y += fp.vy * dt;
+          fp.alpha -= dt * 0.95;
+          if (fp.alpha <= 0) this.floatingPopups.splice(i, 1);
+        }
+
+        this.updateHudElements();
+      },
+
+      checkAABB(ax, ay, aw, ah, bx, by, bw, bh) {
+        return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+      },
+
+      findNearestSafePlatform(refX) {
+        let best = null;
+        let bestDist = Infinity;
+        for (let i = 0; i < this.platforms.length; i++) {
+          const plat = this.platforms[i];
+          if (plat.x + plat.w > this.camera.x + 40) {
+            const d = Math.abs((plat.x + plat.w * 0.5) - refX);
+            if (d < bestDist) {
+              bestDist = d;
+              best = plat;
+            }
+          }
+        }
+        return best;
+      },
+
+      handlePlayerHazardTouch() {
+        const p = this.player;
+        if (this.mode === 'immortal') {
+          // Gentle playful bounce in Immortal Mode — zero damage!
+          p.vy = -340;
+          this.particles.burst(p.x + p.w / 2, p.y + p.h / 2, 8, '#7dd3fc', 90, 3);
+          return;
+        }
+
+        if (p.invulnTimer > 0) return;
+
+        if (p.shieldActive) {
+          p.shieldActive = false;
+          p.invulnTimer = 1.5;
+          p.vy = -380;
+          AudioEngine.playSoftHit();
+          this.particles.burst(p.x + p.w / 2, p.y + p.h / 2, 16, '#38bdf8', 130, 4);
+          this.addFloatingPopup(p.x, p.y - 20, 'เกราะป้องกันทำงาน!', '#7dd3fc');
+          return;
+        }
+
+        p.hp--;
+        p.invulnTimer = 1.8;
+        p.vy = -380;
+        AudioEngine.playSoftHit();
+        this.particles.burst(p.x + p.w / 2, p.y + p.h / 2, 14, '#fb7185', 120, 4);
+        this.updateHudElements();
+
+        if (p.hp <= 0) {
+          this.triggerSurvivalGameOver();
+        }
+      },
+
+      handlePlayerFall() {
+        const p = this.player;
+        const safePlat = this.findNearestSafePlatform(p.x);
+
+        if (this.mode === 'immortal') {
+          // Floating Bubble Rescue — zero penalty!
+          AudioEngine.playJump(true);
+          if (safePlat) {
+            p.x = safePlat.x + safePlat.w * 0.4;
+            p.y = safePlat.y - p.h - 24;
+          } else {
+            p.y = 180;
+          }
+          p.vx = 0;
+          p.vy = -140;
+          p.jumpsLeft = 2;
+          this.particles.burst(p.x + p.w / 2, p.y + p.h, 16, '#7dd3fc', 110, 4.5);
+          this.addFloatingPopup(p.x, p.y - 24, 'ฟองเมฆพากลับขึ้นมา!', '#bae6fd');
+          return;
+        }
+
+        // Survival Mode Fall
+        if (p.shieldActive) {
+          p.shieldActive = false;
+          p.invulnTimer = 1.8;
+          if (safePlat) {
+            p.x = safePlat.x + safePlat.w * 0.4;
+            p.y = safePlat.y - p.h - 20;
+          } else {
+            p.y = 180;
+          }
+          p.vx = 0; p.vy = 0; p.jumpsLeft = 2;
+          this.addFloatingPopup(p.x, p.y - 20, 'เกราะช่วยชีวิต!', '#7dd3fc');
+          return;
+        }
+
+        p.hp--;
+        AudioEngine.playSoftHit();
+        this.updateHudElements();
+
+        if (p.hp <= 0) {
+          this.triggerSurvivalGameOver();
+        } else {
+          p.invulnTimer = 2.0;
+          if (safePlat) {
+            p.x = safePlat.x + safePlat.w * 0.4;
+            p.y = safePlat.y - p.h - 20;
+          } else {
+            p.y = 180;
+          }
+          p.vx = 0;
+          p.vy = 0;
+          p.jumpsLeft = 2;
+          this.particles.burst(p.x + p.w / 2, p.y + p.h, 14, '#fda4af', 110, 4);
+        }
+      },
+
+      triggerSurvivalGameOver() {
+        this.state = 'gameover';
+        SaveSystem.data.highScoreSurvival = Math.max(SaveSystem.data.highScoreSurvival, Math.floor(this.score));
+        SaveSystem.data.maxDistance = Math.max(SaveSystem.data.maxDistance, Math.floor(this.distance));
+        SaveSystem.persistNow(false);
+
+        document.getElementById('goScore').textContent = Math.floor(this.score).toLocaleString();
+        document.getElementById('goDistance').textContent = `${Math.floor(this.distance).toLocaleString()} ม.`;
+        document.getElementById('goCoins').textContent = `+${this.runCoins}`;
+        UIController.openModal('gameOverModal');
+      },
+
+      cleanupOffscreenEntities() {
+        const cutoff = this.camera.x - 450;
+        if (this.platforms.length > 28) {
+          this.platforms = this.platforms.filter(pl => pl.x + pl.w > cutoff);
+        }
+        if (this.coins.length > 60) {
+          this.coins = this.coins.filter(c => !c.collected && c.x > cutoff);
+        }
+        if (this.items.length > 15) {
+          this.items = this.items.filter(it => !it.collected && it.x > cutoff);
+        }
+        if (this.hazards.length > 20) {
+          this.hazards = this.hazards.filter(h => h.x > cutoff);
+        }
+        if (this.enemies.length > 20) {
+          this.enemies = this.enemies.filter(e => e.x > cutoff);
+        }
+        if (this.checkpoints.length > 10) {
+          this.checkpoints = this.checkpoints.filter(cp => cp.x > cutoff);
+        }
+      },
+
+      /* -----------------------------------------------------------------------
+         CANVAS 2D RENDERER (Parallax Landscapes, Custom Vector Characters, FX)
+         ----------------------------------------------------------------------- */
+      render(dt) {
+        const ctx = this.ctx;
+        const w = this.width;
+        const h = this.height;
+        const biome = BIOMES[this.biomeIndex] || BIOMES[0];
+
+        // 1. Sky Gradient
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+        skyGrad.addColorStop(0, biome.skyTop);
+        skyGrad.addColorStop(0.55, biome.skyMid);
+        skyGrad.addColorStop(1, biome.skyBot);
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // 2. Celestial Sun / Moon & Stars
+        this.renderSkyDetails(ctx, w, h, biome);
+
+        // 3. Multi-layered Parallax Hills
+        this.renderParallaxHills(ctx, w, h, biome.hillFar, 0.14, h * 0.62, 75);
+        this.renderParallaxHills(ctx, w, h, biome.hillNear, 0.28, h * 0.74, 52);
+
+        // 4. Ambient Floating Particles (Pollen / Fireflies / Snow)
+        if (!this.lowPerfMode) {
+          ctx.fillStyle = biome.particleColor;
+          for (let i = 0; i < this.ambientMotes.length; i++) {
+            const m = this.ambientMotes[i];
+            m.x += m.vx * dt;
+            m.y += (m.vy + Math.sin(m.phase) * 8) * dt;
+            m.phase += dt * 2;
+            if (m.x < 0) m.x += w;
+            if (m.y < 0) m.y += h;
+            if (m.y > h) m.y -= h;
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        const camX = this.camera.x;
+        const camY = this.camera.y;
+
+        // 5. Platforms
+        for (let i = 0; i < this.platforms.length; i++) {
+          const pl = this.platforms[i];
+          const sx = pl.x - camX;
+          const sy = pl.y - camY + (pl.bounceAnim * 6);
+          if (sx + pl.w < -40 || sx > w + 40) continue;
+
+          // Platform Body
+          ctx.fillStyle = biome.platBody;
+          this.roundRect(ctx, sx, sy + 4, pl.w, pl.h, 10);
+          ctx.fill();
+
+          // Grass / Crystal Top Cap
+          ctx.fillStyle = pl.kind === 'bouncy' ? '#f472b6' : (pl.kind === 'moving' ? '#38bdf8' : biome.platTop);
+          this.roundRect(ctx, sx - 2, sy, pl.w + 4, 11, 6);
+          ctx.fill();
+
+          // Sanctuary Lantern Decoration
+          if (pl.safeRest) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(sx + 24, sy);
+            ctx.lineTo(sx + 24, sy - 26);
+            ctx.stroke();
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath();
+            ctx.arc(sx + 24, sy - 29, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // 6. Checkpoints
+        for (let i = 0; i < this.checkpoints.length; i++) {
+          const cp = this.checkpoints[i];
+          const sx = cp.x - camX;
+          const sy = cp.y - camY;
+          if (sx < -50 || sx > w + 50) continue;
+
+          ctx.strokeStyle = cp.activated ? '#34d399' : '#94a3b8';
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(sx, sy - 54);
+          ctx.stroke();
+
+          ctx.fillStyle = cp.activated ? '#34d399' : '#64748b';
+          ctx.beginPath();
+          ctx.moveTo(sx, sy - 54);
+          ctx.lineTo(sx + 28, sy - 44);
+          ctx.lineTo(sx, sy - 34);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // 7. Coins
+        for (let i = 0; i < this.coins.length; i++) {
+          const c = this.coins[i];
+          if (c.collected) continue;
+          const sx = c.x - camX;
+          const sy = c.y - camY + Math.sin(c.bobPhase) * 4;
+          if (sx < -30 || sx > w + 30) continue;
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.arc(sx, sy, c.r, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(sx, sy, c.r - 3, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // 8. Helpful Items
+        for (let i = 0; i < this.items.length; i++) {
+          const it = this.items[i];
+          if (it.collected) continue;
+          const sx = it.x - camX;
+          const sy = it.y - camY + Math.sin(it.phase) * 5;
+          if (sx < -30 || sx > w + 30) continue;
+
+          ctx.fillStyle = 'rgba(255,255,255,0.18)';
+          ctx.beginPath();
+          ctx.arc(sx, sy, 16, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (it.type === 'heart') {
+            ctx.fillStyle = '#fb7185';
+            ctx.beginPath();
+            ctx.arc(sx - 4, sy - 2, 5, 0, Math.PI * 2);
+            ctx.arc(sx + 4, sy - 2, 5, 0, Math.PI * 2);
+            ctx.lineTo(sx, sy + 8);
+            ctx.closePath();
+            ctx.fill();
+          } else if (it.type === 'magnet') {
+            ctx.strokeStyle = '#fde047';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.arc(sx, sy, 7, Math.PI, 0, false);
+            ctx.lineTo(sx + 7, sy + 6);
+            ctx.moveTo(sx - 7, sy);
+            ctx.lineTo(sx - 7, sy + 6);
+            ctx.stroke();
+          } else {
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+
+        // 9. Hazards & Enemies (Rendered when active)
+        const hazardsActive = (this.mode === 'survival') || (this.mode === 'immortal' && SaveSystem.data?.settings?.immortalHazards);
+        if (hazardsActive) {
+          // Crystal Thorns
+          ctx.fillStyle = '#fb7185';
+          for (let i = 0; i < this.hazards.length; i++) {
+            const hz = this.hazards[i];
+            const sx = hz.x - camX;
+            const sy = hz.y - camY;
+            if (sx < -40 || sx > w + 40) continue;
+            for (let t = 0; t < 3; t++) {
+              const tx = sx + t * 9;
+              ctx.beginPath();
+              ctx.moveTo(tx, sy + hz.h);
+              ctx.lineTo(tx + 4.5, sy);
+              ctx.lineTo(tx + 9, sy + hz.h);
+              ctx.closePath();
+              ctx.fill();
+            }
+          }
+
+          // Cute Patrolling Creatures
+          for (let i = 0; i < this.enemies.length; i++) {
+            const en = this.enemies[i];
+            const sx = en.x - camX;
+            const sy = en.y - camY + Math.abs(Math.sin(en.phase)) * -3;
+            if (sx < -40 || sx > w + 40) continue;
+
+            ctx.fillStyle = '#a855f7';
+            this.roundRect(ctx, sx, sy, en.w, en.h, 11);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#ffffff';
+            const eyeOffset = en.vx >= 0 ? 15 : 6;
+            ctx.beginPath();
+            ctx.arc(sx + eyeOffset, sy + 10, 3, 0, Math.PI * 2);
+            ctx.arc(sx + eyeOffset + 6, sy + 10, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // 10. Player Character
+        if (this.state !== 'menu') {
+          this.renderPlayer(ctx, camX, camY);
+        }
+
+        // 11. Pooled Burst Particles
+        this.particles.updateAndRender(ctx, dt, camX, camY, w, h);
+
+        // 12. Floating World Popups
+        ctx.font = '600 14px Prompt, Inter, sans-serif';
+        ctx.textAlign = 'center';
+        for (let i = 0; i < this.floatingPopups.length; i++) {
+          const fp = this.floatingPopups[i];
+          ctx.globalAlpha = Math.max(0, fp.alpha);
+          ctx.fillStyle = fp.color;
+          ctx.fillText(fp.text, fp.x - camX + 16, fp.y - camY);
+        }
+        ctx.globalAlpha = 1;
+      },
+
+      renderSkyDetails(ctx, w, h, biome) {
+        ctx.save();
+        if (biome.id === 'night' || biome.id === 'fantasy') {
+          // Crescent Moon & Stars
+          ctx.fillStyle = 'rgba(254, 240, 138, 0.85)';
+          ctx.beginPath();
+          ctx.arc(w * 0.78, h * 0.2, 32, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = biome.skyTop;
+          ctx.beginPath();
+          ctx.arc(w * 0.78 + 11, h * 0.2 - 7, 28, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // Soft Warm Sun Halo
+          const sunGrad = ctx.createRadialGradient(w * 0.78, h * 0.22, 8, w * 0.78, h * 0.22, 95);
+          sunGrad.addColorStop(0, 'rgba(254, 249, 195, 0.75)');
+          sunGrad.addColorStop(0.4, 'rgba(253, 224, 71, 0.2)');
+          sunGrad.addColorStop(1, 'rgba(253, 224, 71, 0)');
+          ctx.fillStyle = sunGrad;
+          ctx.beginPath();
+          ctx.arc(w * 0.78, h * 0.22, 95, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      },
+
+      renderParallaxHills(ctx, w, h, color, speedFactor, baseLine, amp) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        const scroll = this.camera.x * speedFactor;
+        for (let x = 0; x <= w + 60; x += 60) {
+          const wx = x + scroll;
+          const y = baseLine - Math.sin(wx * 0.003) * amp - Math.cos(wx * 0.007) * (amp * 0.45);
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, h);
+        ctx.closePath();
+        ctx.fill();
+      },
+
+      renderPlayer(ctx, camX, camY) {
+        const p = this.player;
+        if (p.invulnTimer > 0 && Math.floor(p.invulnTimer * 14) % 2 === 0) return;
+
+        const charDef = CHARACTERS.find(c => c.id === SaveSystem.data.selectedChar) || CHARACTERS[0];
+        const sx = p.x - camX;
+        const sy = p.y - camY;
+
+        // Flowing Scarf Trail
+        if (p.scarfPoints.length > 1) {
+          ctx.strokeStyle = charDef.scarfColor;
+          ctx.lineWidth = 6;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(p.scarfPoints[0].x - camX, p.scarfPoints[0].y - camY);
+          for (let i = 1; i < p.scarfPoints.length; i++) {
+            ctx.lineTo(p.scarfPoints[i].x - camX, p.scarfPoints[i].y - camY);
+          }
+          ctx.stroke();
+        }
+
+        ctx.save();
+        const cx = sx + p.w / 2;
+        const bottomY = sy + p.h;
+        ctx.translate(cx, bottomY);
+        ctx.scale(p.squashX, p.squashY);
+
+        // Character Body (Rounded Indie Spirit)
+        ctx.fillStyle = charDef.bodyColor;
+        this.roundRect(ctx, -p.w / 2, -p.h, p.w, p.h, 14);
+        ctx.fill();
+
+        // Belly Patch
+        ctx.fillStyle = charDef.bellyColor;
+        this.roundRect(ctx, -p.w * 0.3, -p.h * 0.52, p.w * 0.6, p.h * 0.45, 9);
+        ctx.fill();
+
+        // Cute Ears / Sprout Leaf on Head
+        ctx.fillStyle = charDef.scarfColor;
+        ctx.beginPath();
+        ctx.ellipse(p.facing * 2, -p.h - 4, 7, 4, p.facing * -0.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Expressive Eyes
+        const eyeX = p.facing * 6;
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(eyeX - 4, -p.h * 0.65, 2.8, 0, Math.PI * 2);
+        ctx.arc(eyeX + 5, -p.h * 0.65, 2.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye Sparkle
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(eyeX - 4.8, -p.h * 0.68, 1, 0, Math.PI * 2);
+        ctx.arc(eyeX + 4.2, -p.h * 0.68, 1, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+
+        // Active Powerup Auras (Shield / Magnet / Glide)
+        if (p.shieldActive) {
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(sx + p.w / 2, sy + p.h / 2, 28, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+        if (p.magnetTimer > 0) {
+          ctx.strokeStyle = 'rgba(250, 204, 21, 0.5)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.arc(sx + p.w / 2, sy + p.h / 2, 34, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      },
+
+      roundRect(ctx, x, y, w, h, r) {
+        const radius = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+      },
+
+      updateHudElements() {
+        const biome = BIOMES[this.biomeIndex] || BIOMES[0];
+        document.getElementById('hudCoins').textContent = SaveSystem.data.coins.toLocaleString();
+        document.getElementById('hudScore').textContent = Math.floor(this.score).toLocaleString();
+
+        const stageStr = `ด่าน ${this.stage}`;
+        const distStr = `${Math.floor(this.distance).toLocaleString()} ม.`;
+        document.getElementById('hudBiomeName').textContent = biome.name;
+        document.getElementById('hudStageText').textContent = stageStr;
+        document.getElementById('hudDistanceText').textContent = distStr;
+        document.getElementById('hudBiomeNameMobile').textContent = biome.name;
+        document.getElementById('hudStageTextMobile').textContent = stageStr;
+        document.getElementById('hudDistanceTextMobile').textContent = distStr;
+
+        const healthBox = document.getElementById('hudHealthBox');
+        const toggleObsBtn = document.getElementById('btnToggleObstacles');
+
+        if (this.mode === 'immortal') {
+          toggleObsBtn.classList.remove('hidden');
+          document.getElementById('hudObstacleLabel').textContent = SaveSystem.data.settings.immortalHazards ? 'อุปสรรค: เปิด' : 'อุปสรรค: ปิด';
+          healthBox.innerHTML = `
+            <svg class="w-5 h-5 text-sky-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z"/>
+            </svg>
+            <span class="text-xs sm:text-sm font-bold text-sky-200">อมตะ</span>
+          `;
+        } else {
+          toggleObsBtn.classList.add('hidden');
+          let heartsHtml = '';
+          for (let i = 0; i < this.player.maxHp; i++) {
+            const filled = i < this.player.hp;
+            heartsHtml += `
+              <svg class="w-4 h-4 sm:w-5 sm:h-5 ${filled ? 'text-rose-400' : 'text-slate-600'}" viewBox="0 0 24 24" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            `;
+          }
+          healthBox.innerHTML = heartsHtml;
+        }
+      },
+
+      /* -----------------------------------------------------------------------
+         PC KEYBOARD & MULTI-TOUCH VIRTUAL JOYSTICK CONTROLS
+         ----------------------------------------------------------------------- */
+      bindInputs() {
+        window.addEventListener('keydown', (e) => {
+          AudioEngine.unlock();
+          if (e.code === 'ArrowLeft' || e.code === 'KeyA') this.keys.left = true;
+          if (e.code === 'ArrowRight' || e.code === 'KeyD') this.keys.right = true;
+          if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+            e.preventDefault();
+            this.triggerJump();
+          }
+          if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyE' || e.code === 'KeyF') {
+            this.triggerSpecialAbility();
+          }
+          if (e.code === 'Escape' && this.state === 'playing') {
+            this.pauseGame();
+          }
+        });
+
+        window.addEventListener('keyup', (e) => {
+          if (e.code === 'ArrowLeft' || e.code === 'KeyA') this.keys.left = false;
+          if (e.code === 'ArrowRight' || e.code === 'KeyD') this.keys.right = false;
+        });
+
+        // Multi-touch Virtual Joystick
+        const joyZone = document.getElementById('joystickZone');
+        const joyThumb = document.getElementById('joystickThumb');
+        const maxRadius = 42;
+
+        const updateJoystickVisual = (dx, dy) => {
+          joyThumb.style.transform = `translate(${dx}px, ${dy}px)`;
+        };
+
+        joyZone.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          AudioEngine.unlock();
+          if (this.joystick.active) return;
+          const touch = e.changedTouches[0];
+          this.joystick.active = true;
+          this.joystick.touchId = touch.identifier;
+          this.processJoystickMove(touch, joyZone, maxRadius, updateJoystickVisual);
+        }, { passive: false });
+
+        joyZone.addEventListener('touchmove', (e) => {
+          e.preventDefault();
+          if (!this.joystick.active) return;
+          for (let i = 0; i < e.changedTouches.length; i++) {
+            const t = e.changedTouches[i];
+            if (t.identifier === this.joystick.touchId) {
+              this.processJoystickMove(t, joyZone, maxRadius, updateJoystickVisual);
+              break;
+            }
+          }
+        }, { passive: false });
+
+        const resetJoystick = (e) => {
+          for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === this.joystick.touchId) {
+              this.joystick.active = false;
+              this.joystick.touchId = null;
+              this.joystick.dx = 0;
+              this.joystick.dy = 0;
+              updateJoystickVisual(0, 0);
+              break;
+            }
+          }
+        };
+        joyZone.addEventListener('touchend', resetJoystick);
+        joyZone.addEventListener('touchcancel', resetJoystick);
+
+        // Mouse fallback on Joystick for desktop testing
+        let mouseJoy = false;
+        joyZone.addEventListener('mousedown', (e) => {
+          mouseJoy = true;
+          this.joystick.active = true;
+          this.processJoystickMove(e, joyZone, maxRadius, updateJoystickVisual);
+        });
+        window.addEventListener('mousemove', (e) => {
+          if (!mouseJoy) return;
+          this.processJoystickMove(e, joyZone, maxRadius, updateJoystickVisual);
+        });
+        window.addEventListener('mouseup', () => {
+          if (!mouseJoy) return;
+          mouseJoy = false;
+          this.joystick.active = false;
+          this.joystick.dx = 0;
+          this.joystick.dy = 0;
+          updateJoystickVisual(0, 0);
+        });
+
+        // Multi-touch Jump & Special Ability Buttons
+        const btnJump = document.getElementById('btnTouchJump');
+        btnJump.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          this.triggerJump();
+        }, { passive: false });
+        btnJump.addEventListener('mousedown', () => this.triggerJump());
+
+        const btnAbility = document.getElementById('btnTouchAbility');
+        btnAbility.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          this.triggerSpecialAbility();
+        }, { passive: false });
+        btnAbility.addEventListener('mousedown', () => this.triggerSpecialAbility());
+      },
+
+      processJoystickMove(point, zoneEl, maxRadius, renderFn) {
+        const rect = zoneEl.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        let vx = point.clientX - centerX;
+        let vy = point.clientY - centerY;
+        const dist = Math.hypot(vx, vy);
+        if (dist > maxRadius) {
+          vx = (vx / dist) * maxRadius;
+          vy = (vy / dist) * maxRadius;
+        }
+        this.joystick.dx = vx / maxRadius;
+        this.joystick.dy = vy / maxRadius;
+        renderFn(vx, vy);
+      },
+
+      toggleMute() {
+        AudioEngine.unlock();
+        SaveSystem.data.settings.muted = !SaveSystem.data.settings.muted;
+        AudioEngine.applyVolumes();
+        SaveSystem.persistNow(false);
+        UIController.refreshAudioIcons();
+      },
+
+      updateAudioSetting(key, val) {
+        AudioEngine.unlock();
+        SaveSystem.data.settings[key] = Number(val);
+        document.getElementById(`val${key.charAt(0).toUpperCase() + key.slice(1)}`).textContent = `${val}%`;
+        AudioEngine.applyVolumes();
+        SaveSystem.persistNow(false);
+      },
+
+      updateQuality(val) {
+        SaveSystem.data.settings.quality = val;
+        this.lowPerfMode = (val === 'low');
+        this.handleResize();
+        SaveSystem.persistNow(false);
+      },
+
+      updateTouchUi(val) {
+        SaveSystem.data.settings.touchUi = val;
+        UIController.updateTouchControlsVisibility();
+        SaveSystem.persistNow(false);
+      }
+    };
+
+    /* =========================================================================
+       SECTION 6: UI CONTROLLER (Modals, Shop, Worlds, Quests, Clipboard, Toasts)
+       ========================================================================= */
+    const UIController = {
+      openModal(modalId) {
+        AudioEngine.unlock();
+        const backdrop = document.getElementById('modalBackdrop');
+        backdrop.classList.remove('hidden');
+        document.querySelectorAll('.modal-box').forEach(el => el.classList.add('hidden'));
+        const target = document.getElementById(modalId);
+        if (target) target.classList.remove('hidden');
+
+        if (modalId === 'worldModal') this.renderWorldGrid();
+        if (modalId === 'characterModal') this.renderCharacterGrid();
+        if (modalId === 'shopModal') this.renderShopGrid();
+        if (modalId === 'questModal') this.renderQuestsAndStats();
+        if (modalId === 'settingsModal') this.syncSettingsControls();
+      },
+
+      closeAllModals() {
+        document.getElementById('modalBackdrop').classList.add('hidden');
+        document.querySelectorAll('.modal-box').forEach(el => el.classList.add('hidden'));
+      },
+
+      openResetConfirm() {
+        this.openModal('resetConfirmModal');
+      },
+
+      showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        const colors = {
+          success: 'border-emerald-400/50 text-emerald-100 bg-emerald-950/85',
+          warn: 'border-amber-400/50 text-amber-100 bg-amber-950/85',
+          error: 'border-rose-400/50 text-rose-100 bg-rose-950/85',
+          info: 'border-sky-400/50 text-sky-100 bg-slate-900/85'
+        };
+        const toast = document.createElement('div');
+        toast.className = `glass-panel px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-medium border shadow-xl animate-modal ${colors[type] || colors.info}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transition = 'opacity 0.3s ease';
+          setTimeout(() => toast.remove(), 320);
+        }, 2800);
+      },
+
+      copyText(text, successMsg) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          this.showToast(successMsg || 'คัดลอกเรียบร้อยแล้ว', 'success');
+        } catch (e) {
+          this.showToast('ไม่สามารถคัดลอกได้อัตโนมัติ', 'warn');
+        }
+        ta.remove();
+      },
+
+      handleExternalLink(event, url, label) {
+        // Allow native anchor navigation, and provide subtle feedback
+        this.showToast(`กำลังเปิด ${label}...`, 'info');
+      },
+
+      refreshAllUI() {
+        const d = SaveSystem.data;
+        if (!d) return;
+
+        document.getElementById('menuTotalCoins').textContent = d.coins.toLocaleString();
+        document.getElementById('menuWorldCount').textContent = `${d.unlockedBiomes.length}/${BIOMES.length} โลก`;
+
+        const activeChar = CHARACTERS.find(c => c.id === d.selectedChar) || CHARACTERS[0];
+        document.getElementById('menuCharName').textContent = activeChar.name.split(' ')[0];
+
+        const cp = d.checkpoint;
+        const cpBiome = BIOMES.find(b => b.id === (cp?.biomeId || 'forest')) || BIOMES[0];
+        document.getElementById('continueSubtext').textContent = cp?.hasSavedRun
+          ? `ด่าน ${cp.stage} • ${cpBiome.name} (${cp.mode === 'immortal' ? 'อมตะ' : 'เอาชีวิตรอด'})`
+          : `เริ่มต้นใหม่ • ${cpBiome.name}`;
+
+        this.refreshAudioIcons();
+        this.updateTouchControlsVisibility();
+      },
+
+      refreshAudioIcons() {
+        const muted = SaveSystem.data?.settings?.muted;
+        const svgPath = muted
+          ? `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>`
+          : `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>`;
+        const hudIcon = document.getElementById('hudMuteIcon');
+        const menuIcon = document.getElementById('menuMuteIcon');
+        if (hudIcon) hudIcon.innerHTML = svgPath;
+        if (menuIcon) menuIcon.innerHTML = svgPath;
+
+        const settingsMuteBtn = document.getElementById('settingsMuteBtn');
+        if (settingsMuteBtn) {
+          settingsMuteBtn.textContent = muted ? 'ปิดเสียงทั้งหมดอยู่' : 'เปิดเสียงอยู่';
+        }
+      },
+
+      updateTouchControlsVisibility() {
+        const pref = SaveSystem.data?.settings?.touchUi || 'auto';
+        const layer = document.getElementById('touchControlsLayer');
+        if (!layer) return;
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        if (pref === 'always' || (pref === 'auto' && isTouchDevice)) {
+          layer.classList.remove('hidden');
+        } else {
+          layer.classList.add('hidden');
+        }
+      },
+
+      syncSettingsControls() {
+        const s = SaveSystem.data.settings;
+        document.getElementById('sliderBgm').value = s.bgm;
+        document.getElementById('valBgm').textContent = `${s.bgm}%`;
+        document.getElementById('sliderSfx').value = s.sfx;
+        document.getElementById('valSfx').textContent = `${s.sfx}%`;
+        document.getElementById('sliderAmb').value = s.amb;
+        document.getElementById('valAmb').textContent = `${s.amb}%`;
+        document.getElementById('selectQuality').value = s.quality;
+        document.getElementById('selectTouchUi').value = s.touchUi;
+        this.refreshAudioIcons();
+      },
+
+      renderWorldGrid() {
+        const grid = document.getElementById('worldGrid');
+        const d = SaveSystem.data;
+        grid.innerHTML = BIOMES.map(b => {
+          const unlocked = d.unlockedBiomes.includes(b.id);
+          const selected = d.selectedStartBiome === b.id;
+          return `
+            <div class="glass-card p-4 rounded-2xl flex flex-col justify-between border ${selected ? 'border-emerald-400' : 'border-white/10'}">
+              <div>
+                <div class="w-full h-20 rounded-xl mb-3 relative overflow-hidden" style="background: linear-gradient(180deg, ${b.skyTop}, ${b.skyMid}, ${b.skyBot});">
+                  <div class="absolute bottom-0 inset-x-0 h-6 rounded-t-xl" style="background:${b.hillNear};"></div>
+                  <div class="absolute bottom-0 inset-x-0 h-2" style="background:${b.platTop};"></div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <h3 class="font-bold text-white text-sm">${b.name}</h3>
+                  ${selected ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200">เลือกอยู่</span>' : ''}
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5">${b.enName}</p>
+              </div>
+              <div class="mt-3">
+                ${unlocked
+                  ? `<button onclick="UIController.selectBiome('${b.id}')" class="btn-game w-full py-2 rounded-xl ${selected ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-white/10 text-white font-semibold'} text-xs">
+                      ${selected ? 'กำลังใช้งาน' : 'เลือกเริ่มต้นฉากนี้'}
+                    </button>`
+                  : `<button onclick="UIController.unlockBiome('${b.id}')" class="btn-game w-full py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 text-amber-200 font-semibold text-xs">
+                      ปลดล็อก (${b.unlockCost} เหรียญ)
+                    </button>`
+                }
+              </div>
+            </div>
+          `;
+        }).join('');
+      },
+
+      selectBiome(biomeId) {
+        SaveSystem.data.selectedStartBiome = biomeId;
+        SaveSystem.persistNow(false);
+        if (GameApp.state === 'menu') GameApp.resetDemoBackdrop();
+        this.renderWorldGrid();
+        this.refreshAllUI();
+        this.showToast('เปลี่ยนสภาพแวดล้อมเริ่มต้นเรียบร้อย', 'success');
+      },
+
+      unlockBiome(biomeId) {
+        const b = BIOMES.find(item => item.id === biomeId);
+        if (!b) return;
+        if (SaveSystem.data.coins < b.unlockCost) {
+          this.showToast(`เหรียญไม่พอ (ต้องการ ${b.unlockCost} เหรียญ)`, 'warn');
+          return;
+        }
+        SaveSystem.data.coins -= b.unlockCost;
+        SaveSystem.data.unlockedBiomes.push(b.id);
+        SaveSystem.data.selectedStartBiome = b.id;
+        SaveSystem.persistNow(false);
+        AudioEngine.playStageUp();
+        if (GameApp.state === 'menu') GameApp.resetDemoBackdrop();
+        this.renderWorldGrid();
+        this.refreshAllUI();
+        this.showToast(`ปลดล็อก ${b.name} สำเร็จ!`, 'success');
+      },
+
+      renderCharacterGrid() {
+        const grid = document.getElementById('characterGrid');
+        const d = SaveSystem.data;
+        grid.innerHTML = CHARACTERS.map(c => {
+          const unlocked = d.unlockedChars.includes(c.id);
+          const selected = d.selectedChar === c.id;
+          return `
+            <div class="glass-card p-4 rounded-2xl flex items-center gap-4 border ${selected ? 'border-emerald-400' : 'border-white/10'}">
+              <div class="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0" style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1);">
+                <svg class="w-11 h-11" viewBox="0 0 48 48" fill="none">
+                  <rect x="10" y="10" width="28" height="30" rx="11" fill="${c.bodyColor}"/>
+                  <rect x="15" y="23" width="18" height="14" rx="7" fill="${c.bellyColor}"/>
+                  <ellipse cx="26" cy="8" rx="6" ry="3.5" fill="${c.scarfColor}"/>
+                  <circle cx="22" cy="18" r="2.2" fill="#0f172a"/>
+                  <circle cx="30" cy="18" r="2.2" fill="#0f172a"/>
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                  <h3 class="font-bold text-white text-sm truncate">${c.name}</h3>
+                  ${selected ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 shrink-0">ใช้งานอยู่</span>' : ''}
+                </div>
+                <p class="text-[11px] text-sky-300 font-medium mt-0.5">${c.abilityName}</p>
+                <p class="text-[11px] text-slate-300 mt-0.5 line-clamp-2">${c.abilityDesc}</p>
+                <div class="mt-2.5">
+                  ${unlocked
+                    ? `<button onclick="UIController.selectCharacter('${c.id}')" class="btn-game px-4 py-1.5 rounded-xl ${selected ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-white/10 text-white font-semibold'} text-xs">
+                        ${selected ? 'เลือกตัวละครนี้แล้ว' : 'เลือกใช้งาน'}
+                      </button>`
+                    : `<button onclick="UIController.openModal('shopModal')" class="btn-game px-4 py-1.5 rounded-xl bg-amber-500/20 text-amber-200 border border-amber-400/30 text-xs font-semibold">
+                        ไปที่ร้านค้า (${c.price} เหรียญ)
+                      </button>`
+                  }
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      },
+
+      selectCharacter(charId) {
+        SaveSystem.data.selectedChar = charId;
+        SaveSystem.persistNow(false);
+        this.renderCharacterGrid();
+        this.refreshAllUI();
+        this.showToast('เปลี่ยนตัวละครเรียบร้อยแล้ว', 'success');
+      },
+
+      renderShopGrid() {
+        const d = SaveSystem.data;
+        document.getElementById('shopCoinDisplay').textContent = d.coins.toLocaleString();
+        const grid = document.getElementById('shopGrid');
+        grid.innerHTML = CHARACTERS.map(c => {
+          const owned = d.unlockedChars.includes(c.id);
+          const selected = d.selectedChar === c.id;
+          return `
+            <div class="glass-card p-4 rounded-2xl flex items-center gap-4 border ${owned ? 'border-emerald-400/30' : 'border-amber-400/20'}">
+              <div class="w-16 h-16 rounded-2xl bg-slate-900/70 flex items-center justify-center shrink-0">
+                <svg class="w-11 h-11" viewBox="0 0 48 48" fill="none">
+                  <rect x="10" y="10" width="28" height="30" rx="11" fill="${c.bodyColor}"/>
+                  <rect x="15" y="23" width="18" height="14" rx="7" fill="${c.bellyColor}"/>
+                  <ellipse cx="26" cy="8" rx="6" ry="3.5" fill="${c.scarfColor}"/>
+                  <circle cx="22" cy="18" r="2.2" fill="#0f172a"/>
+                  <circle cx="30" cy="18" r="2.2" fill="#0f172a"/>
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold text-white text-sm truncate">${c.name}</h3>
+                <p class="text-[11px] text-slate-300 mt-0.5">${c.abilityName}</p>
+                <div class="mt-2.5">
+                  ${owned
+                    ? `<button onclick="UIController.selectCharacter('${c.id}'); UIController.renderShopGrid();" class="btn-game px-4 py-1.5 rounded-xl ${selected ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-white/10 text-white font-semibold'} text-xs">
+                        ${selected ? 'กำลังสวมใส่' : 'สวมใส่ตัวละคร'}
+                      </button>`
+                    : `<button onclick="UIController.buyCharacter('${c.id}')" class="btn-game px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 font-bold text-xs shadow">
+                        ซื้อด้วย ${c.price} เหรียญ
+                      </button>`
+                  }
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      },
+
+      buyCharacter(charId) {
+        const c = CHARACTERS.find(item => item.id === charId);
+        if (!c || SaveSystem.data.unlockedChars.includes(charId)) return;
+        if (SaveSystem.data.coins < c.price) {
+          this.showToast(`เหรียญไม่เพียงพอ (ขาดอีก ${c.price - SaveSystem.data.coins} เหรียญ)`, 'warn');
+          return;
+        }
+        SaveSystem.data.coins -= c.price;
+        SaveSystem.data.unlockedChars.push(c.id);
+        SaveSystem.data.selectedChar = c.id;
+        SaveSystem.persistNow(false);
+        AudioEngine.playStageUp();
+        this.renderShopGrid();
+        this.refreshAllUI();
+        this.showToast(`ปลดล็อก ${c.name} สำเร็จ!`, 'success');
+      },
+
+      renderQuestsAndStats() {
+        const d = SaveSystem.data;
+        const statsGrid = document.getElementById('statsSummaryGrid');
+        statsGrid.innerHTML = [
+          { label: 'ระยะทางสูงสุด', val: `${d.maxDistance.toLocaleString()} ม.`, color: 'text-emerald-300' },
+          { label: 'สถิติ Survival', val: d.highScoreSurvival.toLocaleString(), color: 'text-rose-300' },
+          { label: 'สถิติ Immortal', val: d.highScoreImmortal.toLocaleString(), color: 'text-sky-300' },
+          { label: 'เหรียญสะสมรวม', val: d.stats.totalCoinsCollected.toLocaleString(), color: 'text-amber-300' }
+        ].map(st => `
+          <div class="glass-card p-3 rounded-2xl text-center">
+            <div class="text-[11px] text-slate-400">${st.label}</div>
+            <div class="font-bold text-base ${st.color} mt-0.5 tabular-nums">${st.val}</div>
+          </div>
+        `).join('');
+
+        // Daily Quests
+        const qList = document.getElementById('dailyQuestList');
+        qList.innerHTML = d.dailyQuests.tasks.map(t => {
+          const pct = Math.min(100, Math.round((t.progress / t.target) * 100));
+          const ready = t.progress >= t.target && !t.claimed;
+          return `
+            <div class="glass-card p-3.5 rounded-2xl flex items-center justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="text-xs sm:text-sm font-semibold text-white">${t.title}</div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden mt-2">
+                  <div class="h-full bg-emerald-400 rounded-full transition-all" style="width:${pct}%"></div>
+                </div>
+                <div class="text-[11px] text-slate-400 mt-1">${t.progress} / ${t.target}</div>
+              </div>
+              <div class="shrink-0">
+                ${t.claimed
+                  ? '<span class="text-xs text-slate-400 font-medium px-3 py-1.5">รับแล้ว</span>'
+                  : (ready
+                    ? `<button onclick="SaveSystem.claimDailyQuest('${t.id}'); UIController.renderQuestsAndStats();" class="btn-game px-3.5 py-2 rounded-xl bg-emerald-400 text-slate-950 font-bold text-xs">รับ +${t.reward}</button>`
+                    : `<span class="text-xs text-amber-300 font-semibold px-3 py-1.5 rounded-xl bg-amber-500/15">+${t.reward} เหรียญ</span>`
+                  )
+                }
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Achievements
+        const aList = document.getElementById('achievementList');
+        aList.innerHTML = ACHIEVEMENTS_DEF.map(a => {
+          const current = a.stat === 'maxDistance' ? d.maxDistance : (d.stats[a.stat] || 0);
+          const claimed = d.claimedAchievements.includes(a.id);
+          const ready = current >= a.target && !claimed;
+          return `
+            <div class="glass-card p-3.5 rounded-2xl flex items-center justify-between gap-2">
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-white truncate">${a.title}</div>
+                <div class="text-[11px] text-slate-300 mt-0.5">${a.desc}</div>
+                <div class="text-[10px] text-slate-400 mt-1">${Math.min(current, a.target)} / ${a.target}</div>
+              </div>
+              <div class="shrink-0">
+                ${claimed
+                  ? '<span class="text-[11px] text-emerald-300 font-semibold">สำเร็จ</span>'
+                  : (ready
+                    ? `<button onclick="SaveSystem.claimAchievement('${a.id}'); UIController.renderQuestsAndStats();" class="btn-game px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-bold text-xs">รับ +${a.reward}</button>`
+                    : `<span class="text-[11px] text-slate-400">+${a.reward}</span>`
+                  )
+                }
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    };
+
+    /* =========================================================================
+       SECTION 7: PWA MANAGER & HOSTABLE MULTI-FILE ZIP BUNDLE GENERATOR
+       ========================================================================= */
+    const PWAManager = {
+      deferredPrompt: null,
+
+      init() {
+        // 1. Attach dynamic Web App Manifest Blob
+        const manifestObj = {
+          name: 'Mini World Relax — 2D Endless Adventure',
+          short_name: 'MiniWorldRelax',
+          description: 'เกมผจญภัย 2D แนวผ่อนคลายไร้ที่สิ้นสุด เล่นได้ทั้งโหมดเอาชีวิตรอดและโหมดอมตะ',
+          start_url: './index.html',
+          display: 'standalone',
+          orientation: 'any',
+          background_color: '#0b1120',
+          theme_color: '#0f172a',
+          icons: [
+            {
+              src: 'data:image/svg+xml;utf8,' + encodeURIComponent(this.getIconSvg(192)),
+              sizes: '192x192',
+              type: 'image/svg+xml'
+            },
+            {
+              src: 'data:image/svg+xml;utf8,' + encodeURIComponent(this.getIconSvg(512)),
+              sizes: '512x512',
+              type: 'image/svg+xml'
+            }
+          ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        document.getElementById('pwa-manifest').setAttribute('href', manifestUrl);
+
+        // 2. Listen for genuine browser install prompt (never fake installation status!)
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          this.deferredPrompt = e;
+          document.getElementById('btnTriggerNativeInstall').classList.remove('hidden');
+          document.getElementById('pwaRealStatusBadge').textContent = 'พร้อมติดตั้งลงเครื่อง';
+          document.getElementById('pwaRealStatusBadge').className = 'text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200';
+        });
+
+        window.addEventListener('appinstalled', () => {
+          this.deferredPrompt = null;
+          document.getElementById('btnTriggerNativeInstall').classList.add('hidden');
+          document.getElementById('pwaRealStatusBadge').textContent = 'ติดตั้งเรียบร้อยแล้ว';
+          UIController.showToast('ติดตั้งเกม Mini World Relax ลงหน้าจอหลักสำเร็จ!', 'success');
+        });
+
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+          document.getElementById('pwaRealStatusBadge').textContent = 'กำลังทำงานในโหมดแอป (Standalone)';
+          document.getElementById('pwaRealStatusBadge').className = 'text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200';
+        }
+      },
+
+      async triggerInstall() {
+        if (!this.deferredPrompt) {
+          UIController.showToast('กรุณาใช้เมนูของเบราว์เซอร์เลือก "เพิ่มไปยังหน้าจอโฮม"', 'info');
+          return;
+        }
+        this.deferredPrompt.prompt();
+        const result = await this.deferredPrompt.userChoice;
+        if (result.outcome === 'accepted') {
+          this.deferredPrompt = null;
+        }
+      },
+
+      getIconSvg(size) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f292e"/>
+      <stop offset="100%" stop-color="#1b4332"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="360" cy="145" r="54" fill="#fde047" opacity="0.85"/>
+  <path d="M0 370 Q130 290 260 350 T512 320 V512 H0 Z" fill="#2d6a4f"/>
+  <rect x="176" y="210" width="136" height="146" rx="54" fill="#34d399"/>
+  <rect x="204" y="272" width="84" height="66" rx="30" fill="#ecfdf5"/>
+  <circle cx="238" cy="248" r="11" fill="#0f172a"/>
+  <circle cx="278" cy="248" r="11" fill="#0f172a"/>
+</svg>`;
+      },
+
+      // Pure JS Valid ZIP Archive Builder (Zero external CDN required)
+      buildZipBlob(files) {
+        const encoder = new TextEncoder();
+        const crcTable = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) {
+          let c = i;
+          for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+          crcTable[i] = c >>> 0;
+        }
+        const crc32 = (bytes) => {
+          let crc = 0xffffffff;
+          for (let i = 0; i < bytes.length; i++) crc = crcTable[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
+          return (crc ^ 0xffffffff) >>> 0;
+        };
+
+        const localChunks = [];
+        const centralChunks = [];
+        let offset = 0;
+
+        for (const f of files) {
+          const nameBytes = encoder.encode(f.path);
+          const dataBytes = encoder.encode(f.content);
+          const crc = crc32(dataBytes);
+
+          // Local File Header (30 bytes + name)
+          const lh = new ArrayBuffer(30 + nameBytes.length);
+          const lv = new DataView(lh);
+          lv.setUint32(0, 0x04034b50, true);
+          lv.setUint16(4, 20, true);
+          lv.setUint16(6, 0x0800, true); // UTF-8
+          lv.setUint16(8, 0, true); // Store (no compression)
+          lv.setUint16(10, 0, true);
+          lv.setUint16(12, 0, true);
+          lv.setUint32(14, crc, true);
+          lv.setUint32(18, dataBytes.length, true);
+          lv.setUint32(22, dataBytes.length, true);
+          lv.setUint16(26, nameBytes.length, true);
+          lv.setUint16(28, 0, true);
+          new Uint8Array(lh, 30).set(nameBytes);
+
+          localChunks.push(new Uint8Array(lh), dataBytes);
+
+          // Central Directory Header (46 bytes + name)
+          const ch = new ArrayBuffer(46 + nameBytes.length);
+          const cv = new DataView(ch);
+          cv.setUint32(0, 0x02014b50, true);
+          cv.setUint16(4, 20, true);
+          cv.setUint16(6, 20, true);
+          cv.setUint16(8, 0x0800, true);
+          cv.setUint16(10, 0, true);
+          cv.setUint16(12, 0, true);
+          cv.setUint16(14, 0, true);
+          cv.setUint32(16, crc, true);
+          cv.setUint32(20, dataBytes.length, true);
+          cv.setUint32(24, dataBytes.length, true);
+          cv.setUint16(28, nameBytes.length, true);
+          cv.setUint16(30, 0, true);
+          cv.setUint16(32, 0, true);
+          cv.setUint16(34, 0, true);
+          cv.setUint16(36, 0, true);
+          cv.setUint32(38, 0, true);
+          cv.setUint32(42, offset, true);
+          new Uint8Array(ch, 46).set(nameBytes);
+
+          centralChunks.push(new Uint8Array(ch));
+          offset += lh.byteLength + dataBytes.length;
+        }
+
+        const centralSize = centralChunks.reduce((acc, c) => acc + c.byteLength, 0);
+        const eocd = new ArrayBuffer(22);
+        const ev = new DataView(eocd);
+        ev.setUint32(0, 0x06054b50, true);
+        ev.setUint16(4, 0, true);
+        ev.setUint16(6, 0, true);
+        ev.setUint16(8, files.length, true);
+        ev.setUint16(10, files.length, true);
+        ev.setUint32(12, centralSize, true);
+        ev.setUint32(16, offset, true);
+        ev.setUint16(20, 0, true);
+
+        return new Blob([...localChunks, ...centralChunks, new Uint8Array(eocd)], { type: 'application/zip' });
+      },
+
+      downloadProjectZip() {
+        const htmlSource = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+        const manifestJson = JSON.stringify({
+          name: 'Mini World Relax — 2D Endless Adventure',
+          short_name: 'MiniWorldRelax',
+          start_url: './index.html',
+          display: 'standalone',
+          background_color: '#0b1120',
+          theme_color: '#0f172a',
+          icons: [
+            { src: './icons/icon-192.svg', sizes: '192x192', type: 'image/svg+xml' },
+            { src: './icons/icon-512.svg', sizes: '512x512', type: 'image/svg+xml' }
+          ]
+        }, null, 2);
+
+        const swCode = `const CACHE_NAME = 'mini-world-relax-v1';
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './assets/game-config.json',
+  './icons/icon-192.svg',
+  './icons/icon-512.svg'
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
+  );
+});
+`;
+
+        const gameConfigJson = JSON.stringify({
+          title: 'Mini World Relax',
+          version: '1.0.0',
+          modes: ['survival', 'immortal'],
+          biomes: BIOMES.map(b => ({ id: b.id, name: b.name, enName: b.enName }))
+        }, null, 2);
+
+        const readmeMd = `# Mini World Relax — 2D Endless Relaxing Adventure\n\n## วิธีการโฮสต์และติดตั้ง PWA\n1. แตกไฟล์ ZIP ทั้งหมดลงในโฟลเดอร์เซิร์ฟเวอร์ (เช่น Vercel, Netlify, GitHub Pages, หรือ Local HTTP Server)\n2. เปิดผ่าน HTTPS เพื่อใช้งาน Service Worker และการติดตั้ง Add to Home Screen แบบออฟไลน์\n`;
+
+        const zipBlob = this.buildZipBlob([
+          { path: 'index.html', content: htmlSource },
+          { path: 'manifest.webmanifest', content: manifestJson },
+          { path: 'service-worker.js', content: swCode },
+          { path: 'assets/game-config.json', content: gameConfigJson },
+          { path: 'icons/icon-192.svg', content: this.getIconSvg(192) },
+          { path: 'icons/icon-512.svg', content: this.getIconSvg(512) },
+          { path: 'README.md', content: readmeMd }
+        ]);
+
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'MiniWorldRelax-PWA.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        UIController.showToast('ดาวน์โหลดไฟล์โปรเจกต์ MiniWorldRelax-PWA.zip สำเร็จ!', 'success');
+      }
+    };
+
+    /* =========================================================================
+       SECTION 8: INITIALIZATION & LIFECYCLE HOOKS
+       ========================================================================= */
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && SaveSystem.data) {
+        if (GameApp.state === 'playing') {
+          GameApp.saveCheckpointState(false);
+        } else {
+          SaveSystem.persistNow(false);
+        }
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (SaveSystem.data) {
+        if (GameApp.state === 'playing') {
+          GameApp.saveCheckpointState(false);
+        } else {
+          SaveSystem.persistNow(false);
+        }
+      }
+    });
+
+    window.onload = async () => {
+      await SaveSystem.init();
+      PWAManager.init();
+      GameApp.init();
+    };
+  </script>
+</body>
+</html>
